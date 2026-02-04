@@ -1,0 +1,3 @@
+/home/hugob/Enseirb/2a/projet_c++/CMakeFiles/projet_c++_S7_Debug.dir
+/home/hugob/Enseirb/2a/projet_c++/CMakeFiles/edit_cache.dir
+/home/hugob/Enseirb/2a/projet_c++/CMakeFiles/rebuild_cache.dir
