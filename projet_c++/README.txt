@@ -42,7 +42,7 @@ pour creer les images et les animations , ulitiser les scripts bash dans le doss
 
 il faut aussi supprimer les dossiers frames et frames_exacte avant de lancer les scripts pour ne pas avoir d'images residuelles
 de meme pour les dossier output et output_exacte
-
+chmod +x fichier.bsh pour rendre les scripts executables
 
 ./gnuplot/create_animation.sh premiere_sortie 1      
 

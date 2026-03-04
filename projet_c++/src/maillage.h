@@ -43,7 +43,11 @@ public:
     int getNbSubdivisions() const;  
     double getDeltaX() const;
     void afficherMaillage() const; // affiche les mailles pour le contrôle
-    std::vector<maille> getMailles() const { return _mailles; }; // retourne la liste des mailles
+    // Version NON-const : retourne une référence modifiable
+    std::vector<maille>& getMailles() { return _mailles; }
+    
+    // Version const : retourne une référence const
+    const std::vector<maille>& getMailles() const { return _mailles; }
     maille getMailles(int i) const { return _mailles[i]; }; // retourne la maille i
     void setMailles(const std::vector<maille>& mailles) { _mailles = mailles; }; // met à jour la liste des mailles
     void setMailles(int i, const maille& maille) { _mailles[i] = maille; }; // met à jour la maille i

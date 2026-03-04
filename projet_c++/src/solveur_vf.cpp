@@ -6,7 +6,7 @@ using namespace Eigen;
 
 // ---------------------------------------Constructeur-----------------------------------
 
-Solveur_VF::Solveur_VF(const Maillage& maillage, const std::string& filename, double t_init, double coef_cfl, double t_final)
+Solveur_VF::Solveur_VF(const Maillage& maillage, const std::string& filename, double t_init, double coef_cfl, double t_final, bool use_muscl)
         : _maillage(maillage), _solveur_flux(Solveur_Flux(_maillage)), _filename(filename), _t(t_init), 
             _dx(maillage.getDeltaX()), _t_final(t_final), _coef_cfl(coef_cfl), _use_muscl(use_muscl)
 {
@@ -16,7 +16,7 @@ Solveur_VF::Solveur_VF(const Maillage& maillage, const std::string& filename, do
 
 void Solveur_VF::avancerTemps()
 {
-    vector<maille> mailles = this->_maillage.getMailles();
+    vector<maille>& mailles = this->_maillage.getMailles();
     vector<maille> nouvelles_mailles = mailles;
     size_t n = mailles.size();
 
@@ -68,17 +68,21 @@ void Solveur_VF::avancerTemps()
     Eigen::Vector2d flux_droite(0.0, 0.0);
     Eigen::Vector2d flux_gauche(0.0, 0.0);
 
-    // Flux à gauche (interface 0|1)
+    // Flux à gauche (interface 0,1)
     flux_gauche = _solveur_flux.calculerFlux(mailles[0], mailles[1]);
 
     for (size_t i = 1 ; i < n - 1; ++i) {  // i = 1..n-2 (cellules internes)
 
-        //excusion des bords
-        if (_use_muscl .AND. i >= 1 .AND. i + 2 < n) {
+        //calcul du flux à droite,excusion des bords
+        if (_use_muscl && i >= 1 && i + 2 < n) {
             flux_droite = _solveur_flux.calculerFluxLimite(i, _use_muscl);
         } else {
             flux_droite = _solveur_flux.calculerFlux(mailles[i], mailles[i + 1]);
         }
+
+        nouvelles_mailles[i].setHauteur(mailles[i].getHauteur() - (dt / this->_dx) * (flux_droite(0) - flux_gauche(0)));
+        nouvelles_mailles[i].setDebit(mailles[i].getDebit()   - (dt / this->_dx) * (flux_droite(1) - flux_gauche(1)));
+        flux_gauche = flux_droite; // le flux à droite devient le flux à gauche pour la prochaine itération
     }
 
     // Fantômes transmis pour le nouvel état

@@ -95,11 +95,14 @@ int main(int argc, char ** argv) // les arguments sont le fichier d'entrée des 
     double t_init,t_final, coef_cfl;
     string output_filename;
     int int_sortie;
+    int use_muscl_int = 1; // 1: ordre 1, 2: ordre 2
+    
 
-
-    input_solver_params >> t_init >> t_final  >> coef_cfl >> output_filename >> int_sortie;
+    input_solver_params >> t_init >> t_final  >> coef_cfl >> output_filename >> int_sortie >> use_muscl_int;
     //cout<<"Paramètres du solveur lus." << endl;
     input_solver_params.close();
+
+    bool use_muscl = (use_muscl_int != 1); // 1: ordre 1, 2: ordre 2
     
     
     cout <<"----------------------------"<< endl;   
@@ -113,7 +116,7 @@ int main(int argc, char ** argv) // les arguments sont le fichier d'entrée des 
 
 
     // ---- création du maillage et de la solution exacte ----
-    Solveur_VF solveur(maillage, output_filename, t_init, coef_cfl, t_final);
+    Solveur_VF solveur(maillage, output_filename, t_init, coef_cfl, t_final, use_muscl);
 
     Solution_Exacte solution_exacte(maillage_exacte, hgauche, hdroite, output_filename+"_exacte");
 
