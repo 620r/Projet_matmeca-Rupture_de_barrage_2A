@@ -57,7 +57,7 @@ Eigen::Vector2d Solveur_Flux::calculerFluxOrdre2(int i)
 // Flux limité van Leer pour interface i+1/2
 Eigen::Vector2d Solveur_Flux::calculerFluxLimite(int i, bool use_muscl)
 {
-    if (use_muscl == 1) {
+    if (use_muscl == false) {
         // Mode ordre 1
         const std::vector<maille>& mailles = _maillage.getMailles();
         return calculerFlux(mailles[i], mailles[i+1]);

@@ -8,7 +8,7 @@ using namespace Eigen;
 
 Solveur_VF::Solveur_VF(const Maillage& maillage, const std::string& filename, double t_init, double coef_cfl, double t_final)
         : _maillage(maillage), _solveur_flux(Solveur_Flux(_maillage)), _filename(filename), _t(t_init), 
-            _dx(maillage.getDeltaX()), _t_final(t_final), _coef_cfl(coef_cfl)
+            _dx(maillage.getDeltaX()), _t_final(t_final), _coef_cfl(coef_cfl), _use_muscl(use_muscl)
 {
 }
 
@@ -45,7 +45,7 @@ void Solveur_VF::avancerTemps()
         cout << "attention pb avec dt ou de"<< endl;
     }
 
-    // clamp pour atteindre exactement t_final
+    //  pour atteindre exactement t_final
     if (_t + dt > _t_final) {
         dt = _t_final - _t;
     }
@@ -59,7 +59,7 @@ void Solveur_VF::avancerTemps()
     
 
 
-    // Mettre à jour les fantômes pour le calcul des flux (transmissif)
+    // Mettre à jour les fantômes pour le calcul des flux 
     mailles[0].setHauteur(mailles[1].getHauteur());
     mailles[0].setDebit(mailles[1].getDebit());
     mailles[n-1].setHauteur(mailles[n-2].getHauteur());
@@ -72,10 +72,13 @@ void Solveur_VF::avancerTemps()
     flux_gauche = _solveur_flux.calculerFlux(mailles[0], mailles[1]);
 
     for (size_t i = 1 ; i < n - 1; ++i) {  // i = 1..n-2 (cellules internes)
-        flux_droite = _solveur_flux.calculerFlux(mailles[i], mailles[i + 1]);
-        nouvelles_mailles[i].setHauteur(mailles[i].getHauteur() - (dt / this->_dx) * (flux_droite(0) - flux_gauche(0)));
-        nouvelles_mailles[i].setDebit(mailles[i].getDebit()   - (dt / this->_dx) * (flux_droite(1) - flux_gauche(1)));
-        flux_gauche = flux_droite;
+
+        //excusion des bords
+        if (_use_muscl .AND. i >= 1 .AND. i + 2 < n) {
+            flux_droite = _solveur_flux.calculerFluxLimite(i, _use_muscl);
+        } else {
+            flux_droite = _solveur_flux.calculerFlux(mailles[i], mailles[i + 1]);
+        }
     }
 
     // Fantômes transmis pour le nouvel état

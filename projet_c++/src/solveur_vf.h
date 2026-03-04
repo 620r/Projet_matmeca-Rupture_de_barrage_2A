@@ -17,7 +17,7 @@ private:
     std::string _filename;  // on va faire des sorties en csv
     bool _use_muscl = false; // pour activer ou non le schéma MUSCL (limiteur de Van der Leer)
 public:
-    Solveur_VF(const Maillage& maillage, const std::string& filename, const double t_init, double coef_cfl, double t_final) ;
+    Solveur_VF(const Maillage& maillage, const std::string& filename, const double t_init, double coef_cfl, double t_final, bool use_muscl = false);
     void avancerTemps(); //avancer le maillage d'un pas de temps dt recalculer afin de respecter la cfl ( on programme en EE pour l'instant, si possible faire en RK2 ou RK4)
     void sauvegarde_etat(int iteration); //sauvegarder l'état du maillage dans un fichier, faire en sorte d'avoir un fichier par pas de temps
     double Get_T() const;
