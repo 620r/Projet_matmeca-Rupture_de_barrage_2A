@@ -20,7 +20,9 @@ public:
     std::vector<double> d_arete;                    // distance entre les centres des mailles de part et d'autre de chaque arrête [nb_aretes]
     std::vector<std::vector<int>> noeud_arete;      // noeuds de chaque arête [nb_aretes][2]
     std::vector<std::vector<double>> centre_maille; // coordonnées des centre des mailles [nb_mailles][2] pour x et y
-    
+    std::vector<std::vector<int>> noeud_arete_bord; // noeuds des arêtes de bord
+    std::vector<int> cl_arete_bord;                 // code CL arêtes de bord
+
     // --- Fonctions publiques accessibles
     void lire_mesh_medit(const std::string &fichier);
     void calcul_connectivite();

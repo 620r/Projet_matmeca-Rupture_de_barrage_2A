@@ -30,8 +30,8 @@ void Maillage::lire_mesh_medit(const string &fichier) {
 
     // --- lecture du nombre d'arêtes de bord, du numéro de chaque noeud de l'arrête et de la CL associée
     getline(in,line); getline(in,line); in >> nb_aretes_bord;
-    vector<vector<int>> noeud_arete_bord(nb_aretes_bord, vector<int>(2));
-    vector<int> cl_arete_bord(nb_aretes_bord);
+    noeud_arete_bord.resize(nb_aretes_bord, vector<int>(2));
+    cl_arete_bord.resize(nb_aretes_bord);
     for(int i=0;i<nb_aretes_bord;i++){
         in >> n1 >> n2 >> cl;
         noeud_arete_bord[i][0] = n1-1;
@@ -215,7 +215,7 @@ void Maillage::sortie_vtk(int iter,
     for(auto &s : scalars){
         const auto &nom = s.first;
         const auto &valeurs = s.second;
-        if(valeurs.size()!=nb_mailles_local){
+        if(valeurs.size()!= static_cast<size_t>(nb_mailles_local)){
             cerr << "Attention : vecteur " << nom << " n'a pas la bonne taille\n";
             continue;
         }
