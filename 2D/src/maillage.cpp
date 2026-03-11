@@ -11,35 +11,42 @@ using namespace std;
 // ----------------------------------------
 // Lecture du maillage Medit
 // ----------------------------------------
-void Maillage::lire_mesh_medit(const std::string &fichier) {
-    std::ifstream in(fichier);
-    if(!in) { std::cerr << "Impossible d'ouvrir " << fichier << "\n"; return; }
+void Maillage::lire_mesh_medit(const string &fichier) {
+    ifstream in(fichier);
+    if(!in) { cerr << "Impossible d'ouvrir " << fichier << "\n"; return; }
 
-    std::string line;
+    string line;
     int nb_noeuds, nb_aretes_bord, nb_mailles;
+    int n1, n2, n3, cl;
 
     // --- ignorer 3 lignes d'en-tête
-    for(int i=0;i<3;i++) std::getline(in,line);
+    for(int i=0;i<3;i++) getline(in,line);
 
-    // --- lecture nombre de noeuds
-    std::getline(in,line); in >> nb_noeuds;
-    coord_noeud.resize(nb_noeuds, std::vector<double>(2));
+    // --- lecture du nombre de noeuds et de leur coordonnées
+    getline(in,line); in >> nb_noeuds;
+    coord_noeud.resize(nb_noeuds, vector<double>(2));
     for(int i=0;i<nb_noeuds;i++)
         in >> coord_noeud[i][0] >> coord_noeud[i][1];
 
-    // --- lecture arêtes de bord
-    std::getline(in,line); std::getline(in,line); in >> nb_aretes_bord;
-    std::vector<std::vector<int>> noeud_arete_bord(nb_aretes_bord, std::vector<int>(2));
-    std::vector<int> cl_arete_bord(nb_aretes_bord);
-    for(int i=0;i<nb_aretes_bord;i++)
-        in >> noeud_arete_bord[i][0] >> noeud_arete_bord[i][1] >> cl_arete_bord[i];
-
-    // --- lecture mailles
-    std::getline(in,line); std::getline(in,line); in >> nb_mailles;
-    noeud_maille.resize(nb_mailles, std::vector<int>(3));
-    for(int i=0;i<nb_mailles;i++)
-        in >> noeud_maille[i][0] >> noeud_maille[i][1] >> noeud_maille[i][2];
-
+    // --- lecture du nombre d'arêtes de bord, du numéro de chaque noeud de l'arrête et de la CL associée
+    getline(in,line); getline(in,line); in >> nb_aretes_bord;
+    vector<vector<int>> noeud_arete_bord(nb_aretes_bord, vector<int>(2));
+    vector<int> cl_arete_bord(nb_aretes_bord);
+    for(int i=0;i<nb_aretes_bord;i++){
+        in >> n1 >> n2 >> cl;
+        noeud_arete_bord[i][0] = n1-1;
+        noeud_arete_bord[i][1] = n2-1;
+        cl_arete_bord[i] = cl;
+    }
+    // --- lecture du nombre de mailles et du numéro de chaque noeud de la maille
+    getline(in,line); getline(in,line); in >> nb_mailles;
+    noeud_maille.resize(nb_mailles, vector<int>(3));
+    for(int i=0;i<nb_mailles;i++){
+        in >> n1 >> n2 >> n3;
+        noeud_maille[i][0] = n1-1;
+        noeud_maille[i][1] = n2-1;
+        noeud_maille[i][2] = n3-1;
+    }
     in.close();
 }
 
@@ -47,37 +54,67 @@ void Maillage::lire_mesh_medit(const std::string &fichier) {
 // Calcul connectivités
 // ----------------------------------------
 void Maillage::calcul_connectivite() {
+
     int nb_noeuds = coord_noeud.size();
     int nb_trig = noeud_maille.size();
-    std::vector<std::vector<int>> flag(nb_noeuds, std::vector<int>(nb_noeuds,0));
 
-    int nb_cotes = 0;
-    for(int i=0;i<nb_trig;i++){
-        int n1=noeud_maille[i][0], n2=noeud_maille[i][1], n3=noeud_maille[i][2];
-        if(flag[n1][n2]==0){ nb_cotes++; flag[n1][n2]=nb_cotes; flag[n2][n1]=nb_cotes; }
-        if(flag[n2][n3]==0){ nb_cotes++; flag[n2][n3]=nb_cotes; flag[n3][n2]=nb_cotes; }
-        if(flag[n3][n1]==0){ nb_cotes++; flag[n3][n1]=nb_cotes; flag[n1][n3]=nb_cotes; }
-    }
+    noeud_arete.clear();
+    maille_arete.clear();
+    arete_maille.resize(nb_trig, vector<int>(3));
 
-    // e = noeud_arete
-    noeud_arete.resize(nb_cotes, std::vector<int>(2));
-    for(int i=0;i<nb_trig;i++){
-        int n1=noeud_maille[i][0], n2=noeud_maille[i][1], n3=noeud_maille[i][2];
-        noeud_arete[flag[n1][n2]-1] = {n1,n2};
-        noeud_arete[flag[n2][n3]-1] = {n2,n3};
-        noeud_arete[flag[n3][n1]-1] = {n3,n1};
-    }
+    vector<vector<int>> aretes_du_noeud(nb_noeuds);
 
-    // ar = arete_maille, trig = maille_arete
-    arete_maille.resize(nb_trig, std::vector<int>(3));
-    maille_arete.resize(nb_cotes, std::vector<int>(2,0));
     for(int i=0;i<nb_trig;i++){
-        int n1=noeud_maille[i][0], n2=noeud_maille[i][1], n3=noeud_maille[i][2];
-        int edges[3] = {flag[n1][n2]-1, flag[n2][n3]-1, flag[n3][n1]-1};
-        arete_maille[i] = {edges[0]+1, edges[1]+1, edges[2]+1};
+
+        int n[3] = {
+            noeud_maille[i][0],
+            noeud_maille[i][1],
+            noeud_maille[i][2]
+        };
+
         for(int e=0;e<3;e++){
-            if(maille_arete[edges[e]][0]==0) maille_arete[edges[e]][0] = i+1;
-            else maille_arete[edges[e]][1] = i+1;
+            int a = n[e];
+            int b = n[(e+1)%3];
+            if(a>b) swap(a,b);
+            int edge_id = -1;
+
+            // chercher seulement dans les arêtes attachées à a
+            for(int id : aretes_du_noeud[a]){
+                if(noeud_arete[id][0]==a && noeud_arete[id][1]==b){
+                    edge_id = id;
+                    break;
+                }
+            }
+
+            if(edge_id == -1){
+                edge_id = noeud_arete.size();
+                noeud_arete.push_back({a,b});
+                maille_arete.push_back({i,-1});
+                aretes_du_noeud[a].push_back(edge_id);
+                aretes_du_noeud[b].push_back(edge_id);
+            }
+            else{
+                maille_arete[edge_id][1] = i;
+            }
+            arete_maille[i][e] = edge_id;
+        }
+    }
+
+    // --- allocation et initialisation des CL
+    cl_arete.resize(noeud_arete.size(), -1); // toutes les arêtes par défaut -1 (interne)
+
+    // --- assigner les codes CL des arêtes de bord
+    for(size_t i=0;i<noeud_arete_bord.size();i++){
+        int a = noeud_arete_bord[i][0];
+        int b = noeud_arete_bord[i][1];
+        // rechercher l'arête correspondante dans noeud_arete
+        for(size_t e=0;e<noeud_arete.size();e++){
+            int n0 = noeud_arete[e][0];
+            int n1 = noeud_arete[e][1];
+            if( (n0==a && n1==b) || (n0==b && n1==a) ){
+                cl_arete[e] = cl_arete_bord[i];
+                break;
+            }
         }
     }
 }
@@ -92,7 +129,7 @@ void Maillage::calcul_aires() {
         auto &a = coord_noeud[noeud_maille[i][0]];
         auto &b = coord_noeud[noeud_maille[i][1]];
         auto &c = coord_noeud[noeud_maille[i][2]];
-        aire_maille[i] = std::abs( (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0]) )/2.0;
+        aire_maille[i] = abs( (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0]) )/2.0;
     }
 }
 
@@ -104,7 +141,7 @@ void Maillage::calcul_centres_et_aretes() {
     int nb_aretes = noeud_arete.size();
 
     // centres de maille
-    std::vector<std::vector<double>> centre_maille(nb_mailles, std::vector<double>(2));
+    centre_maille.resize(nb_mailles, vector<double>(2));
     for(int i=0;i<nb_mailles;i++){
         auto &A = coord_noeud[noeud_maille[i][0]];
         auto &B = coord_noeud[noeud_maille[i][1]];
@@ -120,24 +157,24 @@ void Maillage::calcul_centres_et_aretes() {
     // arêtes
     d_arete.resize(nb_aretes);
     l_arete.resize(nb_aretes);
-    milieu_arete.resize(nb_aretes, std::vector<double>(2));
+    milieu_arete.resize(nb_aretes, vector<double>(2));
     for(int i=0;i<nb_aretes;i++){
-        int tg = maille_arete[i][0]-1;
-        int td = maille_arete[i][1]-1;
+        int tg = maille_arete[i][0];
+        int td = maille_arete[i][1];
         auto &Cg = centre_maille[tg];
-        std::vector<double> Cd(2,0.0);
+        vector<double> Cd(2,0.0);
         if(td>=0) Cd = centre_maille[td];
         else {
             auto &A = coord_noeud[noeud_arete[i][0]];
             auto &B = coord_noeud[noeud_arete[i][1]];
             Cd[0] = (A[0]+B[0])/2.0; Cd[1] = (A[1]+B[1])/2.0;
         }
-        d_arete[i] = std::sqrt((Cd[0]-Cg[0])*(Cd[0]-Cg[0]) + (Cd[1]-Cg[1])*(Cd[1]-Cg[1]));
+        d_arete[i] = sqrt((Cd[0]-Cg[0])*(Cd[0]-Cg[0]) + (Cd[1]-Cg[1])*(Cd[1]-Cg[1]));
         auto &A = coord_noeud[noeud_arete[i][0]];
         auto &B = coord_noeud[noeud_arete[i][1]];
         milieu_arete[i][0] = 0.5*(A[0]+B[0]);
         milieu_arete[i][1] = 0.5*(A[1]+B[1]);
-        l_arete[i] = std::sqrt((B[0]-A[0])*(B[0]-A[0]) + (B[1]-A[1])*(B[1]-A[1]));
+        l_arete[i] = sqrt((B[0]-A[0])*(B[0]-A[0]) + (B[1]-A[1])*(B[1]-A[1]));
     }
 }
 
@@ -145,11 +182,11 @@ void Maillage::calcul_centres_et_aretes() {
 // Sortie VTK multi-champs
 // ----------------------------------------
 void Maillage::sortie_vtk(int iter, 
-    const std::vector<std::pair<std::string,std::vector<double>>> &scalars) const
+    const vector<pair<string,vector<double>>> &scalars) const
 {
-    std::string filename = "sortie_" + std::to_string(iter) + ".vtk";
-    std::ofstream out(filename);
-    if(!out){ std::cerr << "Impossible d'ouvrir " << filename << "\n"; return; }
+    string filename = "sortie_" + to_string(iter) + ".vtk";
+    ofstream out(filename);
+    if(!out){ cerr << "Impossible d'ouvrir " << filename << "\n"; return; }
 
     int nb_noeuds_local = coord_noeud.size();
     int nb_mailles_local = noeud_maille.size();
@@ -162,7 +199,7 @@ void Maillage::sortie_vtk(int iter,
     // Points
     out << "POINTS " << nb_noeuds_local << " double\n";
     for(auto &p : coord_noeud)
-        out << std::setprecision(12) << p[0] << " " << p[1] << " 0.0\n";
+        out << setprecision(12) << p[0] << " " << p[1] << " 0.0\n";
 
     // Cells
     out << "CELLS " << nb_mailles_local << " " << nb_mailles_local*4 << "\n";
@@ -179,7 +216,7 @@ void Maillage::sortie_vtk(int iter,
         const auto &nom = s.first;
         const auto &valeurs = s.second;
         if(valeurs.size()!=nb_mailles_local){
-            std::cerr << "Attention : vecteur " << nom << " n'a pas la bonne taille\n";
+            cerr << "Attention : vecteur " << nom << " n'a pas la bonne taille\n";
             continue;
         }
         out << "SCALARS " << nom << " double\n";

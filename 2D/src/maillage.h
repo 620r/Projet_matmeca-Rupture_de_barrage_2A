@@ -19,6 +19,7 @@ public:
     std::vector<double> l_arete;                    // longueur des arêtes [nb_aretes]
     std::vector<double> d_arete;                    // distance entre les centres des mailles de part et d'autre de chaque arrête [nb_aretes]
     std::vector<std::vector<int>> noeud_arete;      // noeuds de chaque arête [nb_aretes][2]
+    std::vector<std::vector<double>> centre_maille; // coordonnées des centre des mailles [nb_mailles][2] pour x et y
     
     // --- Fonctions publiques accessibles
     void lire_mesh_medit(const std::string &fichier);
