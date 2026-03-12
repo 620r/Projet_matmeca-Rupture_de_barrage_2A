@@ -16,83 +16,110 @@ Solveur_VF::Solveur_VF(const Maillage& maillage, const std::string& filename, do
 
 void Solveur_VF::avancerTemps()
 {
-    vector<maille>& mailles = this->_maillage.getMailles();
-    vector<maille> nouvelles_mailles = mailles;
+    // accès direct au maillage
+    vector<maille> & mailles = _maillage.getMailles();
     size_t n = mailles.size();
 
-    //on doit recalculer dt à chaque iteration en temps en fonction de be car la condition de stabilité CFL varie
-    
-    double dt;
-    double max_de = 0.0;
+    // copie pour stocker l'état à n+1
+    vector<maille> nouvelles_mailles = mailles;
+
+    // ================== 1) calcul de dt (CFL) ==================
     double g = 9.81;
+    double max_de = 0.0;
+    const double eps_h = 1e-10;
+
     for (size_t i = 0; i < n - 1; ++i) {
-        double hg = mailles[i].getHauteur();//hauteur dans la maille i
-        double hd = mailles[i+1].getHauteur();//hauteur dans la maille i+1
-        double ud = mailles[i+1].calculerVitesse(); // vitesse dans la maille i+1
-        double ug = mailles[i].calculerVitesse(); // vitesse dans la maille i
-        double de = max(abs(ug) + sqrt(hg*g), abs(ud) + sqrt(hd*g));
-        if (de > max_de) {
-            max_de = de;  // on cherche le max de de pour le calcul de dt
+        double hg = max(mailles[i].getHauteur(), eps_h);
+        double hd = max(mailles[i+1].getHauteur(), eps_h);
+
+        double ug = mailles[i].getDebit()   / hg;
+        double ud = mailles[i+1].getDebit() / hd;
+
+        double de = max(abs(ug) + sqrt(g * hg),
+                        abs(ud) + sqrt(g * hd));
+
+        if (isfinite(de) && de > max_de) {
+            max_de = de;
         }
-
-    
     }
-    // calcul de dt (CFL)
-    if (max_de > 0.0) {
-        dt = _coef_cfl * (_dx / max_de);
+
+    double dt;
+    if (!(max_de > 0.0) || !isfinite(max_de)) {
+        cerr << "max_de invalide -> dt = 1e-6" << endl;
+        dt = 1e-6;
     } else {
-        dt = 1;
-        cout << "attention pb avec dt ou de"<< endl;
+        dt = _coef_cfl * (_dx / max_de);
     }
 
-    //  pour atteindre exactement t_final
+    // ajustement pour t_final
     if (_t + dt > _t_final) {
         dt = _t_final - _t;
     }
 
-    //cout << "Debug: dt calculé = " << dt << ", max_de = " << max_de << endl;
-
-
-
-    // // on implémente ici un pb avec des conditions de flux au bord nulles
-
-    
-
-
-    // Mettre à jour les fantômes pour le calcul des flux 
-    mailles[0].setHauteur(mailles[1].getHauteur());
-    mailles[0].setDebit(mailles[1].getDebit());
-    mailles[n-1].setHauteur(mailles[n-2].getHauteur());
-    mailles[n-1].setDebit(mailles[n-2].getDebit());
-
-    Eigen::Vector2d flux_droite(0.0, 0.0);
-    Eigen::Vector2d flux_gauche(0.0, 0.0);
-
-    // Flux à gauche (interface 0,1)
-    flux_gauche = _solveur_flux.calculerFlux(mailles[0], mailles[1]);
-
-    for (size_t i = 1 ; i < n - 1; ++i) {  // i = 1..n-2 (cellules internes)
-
-        //calcul du flux à droite,excusion des bords
-        if (_use_muscl && i >= 1 && i + 2 < n) {
-            flux_droite = _solveur_flux.calculerFluxLimite(i, _use_muscl);
-        } else {
-            flux_droite = _solveur_flux.calculerFlux(mailles[i], mailles[i + 1]);
-        }
-
-        nouvelles_mailles[i].setHauteur(mailles[i].getHauteur() - (dt / this->_dx) * (flux_droite(0) - flux_gauche(0)));
-        nouvelles_mailles[i].setDebit(mailles[i].getDebit()   - (dt / this->_dx) * (flux_droite(1) - flux_gauche(1)));
-        flux_gauche = flux_droite; // le flux à droite devient le flux à gauche pour la prochaine itération
+    // si dt trop petit, on sort pour éviter de boucler à l'infini
+    if (dt <= 1e-14) {
+        cerr << "dt trop petit (" << dt << "), on force t = t_final" << endl;
+        _t = _t_final;
+        return;
     }
 
-    // Fantômes transmis pour le nouvel état
-    nouvelles_mailles[0].setHauteur(nouvelles_mailles[1].getHauteur());
-    nouvelles_mailles[0].setDebit(nouvelles_mailles[1].getDebit());
-    nouvelles_mailles[n-1].setHauteur(nouvelles_mailles[n-2].getHauteur());
-    nouvelles_mailles[n-1].setDebit(nouvelles_mailles[n-2].getDebit());
+    // ================== 2) conditions aux bords (fantômes) ==================
+    // bords transmissifs simples
+    mailles[0].setHauteur( mailles[1].getHauteur() );
+    mailles[0].setDebit(   mailles[1].getDebit()   );
+    mailles[n-1].setHauteur( mailles[n-2].getHauteur() );
+    mailles[n-1].setDebit(   mailles[n-2].getDebit()   );
 
-    this->_maillage.setMailles(nouvelles_mailles);
-    this->_t += dt;
+    // ================== 3) calcul des flux et mise à jour ==================
+    Eigen::Vector2d flux_gauche;
+    Eigen::Vector2d flux_droite;
+
+    // flux à l'interface 0|1 (toujours ordre 1)
+    flux_gauche = _solveur_flux.calculerFlux(mailles[0], mailles[1]);
+
+    // cellules internes : i = 1 .. n-2
+    for (size_t i = 1; i < n - 1; ++i) {
+
+        // flux à droite : interface i|i+1
+        if (_use_muscl && i >= 1 && i + 2 < n) {
+            // flux MUSCL limité (ordre 2)
+            flux_droite = _solveur_flux.calculerFluxLimite((int)i, true);
+        } else {
+            // flux ordre 1
+            flux_droite = _solveur_flux.calculerFlux(mailles[i], mailles[i+1]);
+        }
+
+        // schéma volumes finis : U_i^{n+1} = U_i^n - dt/dx (F_{i+1/2} - F_{i-1/2})
+        double hnew = mailles[i].getHauteur()
+                      - (dt / _dx) * (flux_droite(0) - flux_gauche(0));
+        double qnew = mailles[i].getDebit()
+                      - (dt / _dx) * (flux_droite(1) - flux_gauche(1));
+
+        // sécurité : positivité et NaN
+        if (!isfinite(hnew) || hnew < eps_h) {
+            hnew = eps_h;
+            qnew = 0.0;
+        }
+        if (!isfinite(qnew)) {
+            qnew = 0.0;
+        }
+
+        nouvelles_mailles[i].setHauteur(hnew);
+        nouvelles_mailles[i].setDebit(qnew);
+
+        // pour la maille suivante, le flux de droite devient le flux de gauche
+        flux_gauche = flux_droite;
+    }
+
+    // ================== 4) conditions aux bords sur le nouvel état ==================
+    nouvelles_mailles[0].setHauteur( nouvelles_mailles[1].getHauteur() );
+    nouvelles_mailles[0].setDebit(   nouvelles_mailles[1].getDebit()   );
+    nouvelles_mailles[n-1].setHauteur( nouvelles_mailles[n-2].getHauteur() );
+    nouvelles_mailles[n-1].setDebit(   nouvelles_mailles[n-2].getDebit()   );
+
+    // ================== 5) remplacement de l'ancien état ==================
+    _maillage.setMailles(nouvelles_mailles);
+    _t += dt;
 }
 
 

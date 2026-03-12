@@ -10,20 +10,20 @@ using namespace Eigen;
 Eigen::Vector2d Solveur_Flux::calculerFlux(const maille& m1, const maille& m2)
 {
     Eigen::Vector2d flux;
-    double hg = m1.getHauteur();
-    double hd = m2.getHauteur();
+    const double eps_h = 1e-10;
+    double hg = max(m1.getHauteur(), eps_h);
+    double hd = max(m2.getHauteur(), eps_h);
     double qg = m1.getDebit();
     double qd = m2.getDebit();
-    double ug = m1.calculerVitesse();
-    double ud = m2.calculerVitesse();
+
+    double ug = qg / hg;
+    double ud = qd / hd;
     double g = 9.81;
 
-    // Rusanov flux
-    double de = max(abs(ug) + sqrt(g*hg), abs(ud) + sqrt(g*hd)); // calcul du coefficient de diffusion comme dans les notes
-    
-    flux(0) = 0.5 * (qg + qd) - 0.5 * de * (hd - hg); // flux de hauteur
-    flux(1) = 0.5 * (qg*ug + 0.5*g*hg*hg + qd*ud + 0.5*g*hd*hd) - 0.5 * de * (qd - qg); // flux de debit
-    
+    double de = max(abs(ug) + sqrt(g * hg), abs(ud) + sqrt(g * hd));
+
+    flux(0) = 0.5 * (qg + qd) - 0.5 * de * (hd - hg);
+    flux(1) = 0.5 * (qg*ug + 0.5*g*hg*hg + qd*ud + 0.5*g*hd*hd) - 0.5 * de * (qd - qg);
     return flux;
 }
 //------------------------------------------------------------------------------
@@ -43,8 +43,8 @@ Eigen::Vector2d Solveur_Flux::calculerFluxOrdre2(int i)
     double qR = m[i+1].getDebit()   - 0.5 * (m[i+2].getDebit()   - m[i+1].getDebit());
     
     // Sécurité: hauteur positive
-    hL = std::max(hL, 1e-12);
-    hR = std::max(hR, 1e-12);
+    hL = max(hL, 1e-12);
+    hR = max(hR, 1e-12);
     
     // États reconstruits temporaires afin de calculer le flux de Rusanov
     maille UL(0.0, hL, qL);
@@ -59,11 +59,11 @@ Eigen::Vector2d Solveur_Flux::calculerFluxLimite(int i, bool use_muscl)
 {
     if (use_muscl == false) {
         // Mode ordre 1
-        const std::vector<maille>& mailles = _maillage.getMailles();
+        const auto& mailles = _maillage.getMailles();
         return calculerFlux(mailles[i], mailles[i+1]);
     }
     
-    const std::vector<maille>& mailles = _maillage.getMailles();
+    const auto& mailles = _maillage.getMailles();
     const double eps = 1e-12;
     
     // F^(1)_{i+1/2}
@@ -117,7 +117,7 @@ Eigen::Vector2d Solveur_Flux::calculerFluxLimite(int i, bool use_muscl)
 
 void Solveur_Flux::afficherFlux() 
 {
-    const std::vector<maille>& mailles = _maillage.getMailles();
+    const auto& mailles = _maillage.getMailles();
     for (size_t i = 0; i < mailles.size() - 1; ++i) {
         Eigen::Vector2d flux = calculerFlux(mailles[i], mailles[i + 1]);
         cout << "Flux entre la maille " << i << " et la maille " << i + 1 << ": ";

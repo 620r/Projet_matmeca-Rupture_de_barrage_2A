@@ -21,7 +21,7 @@ echo "0. 5. 0.225 premiere_sortie 100" > /tmp/init_test_temps_cfl_0225.txt
 # ====== CONVERGENCE SPATIALE (maillage raffiné, même CFL) ======
 echo ""
 echo "╔═════════════════════════════════════╗"
-echo "║   TEST 1: CONVERGENCE EN ESPACE    ║"
+echo "║   TEST 1: CONVERGENCE EN ESPACE     ║"
 echo "║   (CFL fixe, maillage raffiné)      ║"
 echo "╚═════════════════════════════════════╝"
 

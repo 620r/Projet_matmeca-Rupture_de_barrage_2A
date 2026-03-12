@@ -103,6 +103,12 @@ int main(int argc, char ** argv) // les arguments sont le fichier d'entrée des 
     input_solver_params.close();
 
     bool use_muscl = (use_muscl_int != 1); // 1: ordre 1, 2: ordre 2
+
+    if (use_muscl) {
+        cout << "MODE MUSCL ORDRE 2 ACTIVÉ" << endl;
+    } else {
+        cout << "MODE ORDRE 1" << endl;
+    }
     
     
     cout <<"----------------------------"<< endl;   
@@ -188,7 +194,7 @@ int main(int argc, char ** argv) // les arguments sont le fichier d'entrée des 
     auto err_mask_L2 = erreur_L2_masquee(solveur.Get_Maillage(), solution_exacte.Get_Maillage(), intervalles);
     auto err_mask_L1 = erreur_L1_masquee(solveur.Get_Maillage(), solution_exacte.Get_Maillage(), intervalles);
 
-    cout << "Simulation terminée à t = " << t <<" avec " << iteration << " itérations." << endl;
+    cout << "Simulation terminéegit à t = " << t <<" avec " << iteration << " itérations." << endl;
     cout << "Erreur finale sur la hauteur: " << err_final[0] << endl;
     cout << "Erreur finale sur le débit: " << err_final[1] << endl;
     cout << "Erreur finale l1(hauteur): " << err_final_L1[0] << endl;
@@ -206,6 +212,13 @@ int main(int argc, char ** argv) // les arguments sont le fichier d'entrée des 
     //---------------------------------------------------------------------------------
     //------------------ fin du programme ---------------------------------------------
     //---------------------------------------------------------------------------------
+    
+    if (use_muscl) {
+        cout << "MODE MUSCL ORDRE 2 ACTIVÉ" << endl;
+    } else {
+        cout << "MODE ORDRE 1" << endl;
+    }
+    
 
     return 0;
     
