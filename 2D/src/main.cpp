@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <ctime>
+#include <Eigen/Dense>
 
 using namespace std;
 using namespace Eigen;
@@ -24,8 +25,7 @@ int main(int argc, char * argv[])
 
 
     // Données lues dans fichier param.dat :::::::::
-    double Uinit, t_final ;
-    int cl ;
+
     
     //::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -38,6 +38,7 @@ int main(int argc, char * argv[])
     // Constantes CL ::::::::
     double UD, UG ;
     double Uinit ;
+    int cl ;
     double phi_b;
     //:::::::::::::::::::::::
 
@@ -54,8 +55,10 @@ int main(int argc, char * argv[])
     int nb_mailles ;
     //:::::::::::::::::::::::::::
 
-
-
+    //Boucle
+    double sum;
+    double am; 
+    int j, k;
 
     // Initialisations :
 
@@ -72,51 +75,51 @@ int main(int argc, char * argv[])
         for (int k=0 ; k<nb_mailles ; k++) // Boucle sur les mailles
         {
             Unp1(k)=Un(k) ;
-            double sum=0 ;
+            sum = 0 ;
 
 
             // BOUCLE A REVOIR AVEC VRAIES CL 
             for (int j=0 ; j<4 ; j++) // Boucle sur les arretes (3 arretes car triangle)
             {
-                double am =arete_maille(j,k) ; 
+                am = m.arete_maille(j)(k) ; 
 
-                if (maille_arete(am,2)==0) // if arrete de bord : maille_arete(arete_maille(j,k),1)==0
+                if (m.maille_arete(am,2)==0) // if arrete de bord : maille_arete(arete_maille(j,k),1)==0
                 {
 
-                if (cl_arete(am)==20) {
+                if (m.cl_arete(am)==20) {
 
-                  flux=phi_b ; } // A VOIR 
+                  flux = phi_b ; } // A VOIR 
 
-                else if (cl_arete(am)==10) {
+                else if (m.cl_arete(am)==10) {
 
-                  flux=-D*(UG-Un(j))/d_arete(am) ; } // A VOIR 
+                  flux = -D*(UG-Un(j))/m.d_arete(am) ; } // A VOIR 
 
                 else if (cl_arete(am)==11) {
 
-                  flux=-D*(UD-Un(j))/d_arete(am) ; } // A VOIR
+                  flux = -D*(UD-Un(j))/m.d_arete(am) ; } // A VOIR
                 
 
                 else 
 
-                double be = std::max(abs(Un(maille_arete(am,2))), abs(Un(maille_arete(am,1)))) ;  // Doute : max des vp
+                double be = std::max(abs(Un(m.maille_arete(am,2))), abs(Un(maille_arete(am,1)))) ;  // Doute : max des vp
 
-                if (maille_arete(am,1)==j) {       // if pour savoir si 1 ou 2 à mettre dans maille arete 
+                if (m.maille_arete(am,1)==j) {       // if pour savoir si 1 ou 2 à mettre dans maille arete 
                     
-                    flux=-0.5*(F(Un(maille_arete(am,2)))+F(Un(j))) + 
-                    (be/2)*(Un(maille_arete(am,2))-Un(j)); }  // Doute : (UL-UK)
+                    flux=-0.5*(F(Un(m.maille_arete(am,2)))+F(Un(j))) + 
+                    (be/2)*(Un(m.maille_arete(am,2))-Un(j)); }  // Doute : (UL-UK)
 
                 else {
 
-                    flux=-0.5*(F(Un(maille_arete(am,1)))+F(Un(j))) + 
-                    (be/2)*(Un(maille_arete(am,1))-Un(j)); }  // Doute : (UL-UK)
+                    flux=-0.5*(F(Un(m.maille_arete(am,1)))+F(Un(j))) + 
+                    (be/2)*(Un(m.maille_arete(am,1))-Un(j)); }  // Doute : (UL-UK)
 
 
 
-                sum=sum+flux*l_arete(am) ;
+                sum = sum+flux*m.l_arete(am) ;
 
                 }
 
-            Unp1(j)= Un(j) - (delta_t / aire_maille(j))*sum ; // OK
+            Unp1(j)= Un(j) - (delta_t / m.aire_maille(j))*sum ; // OK
             Un(j)=Unp1(j) ;
             }
             

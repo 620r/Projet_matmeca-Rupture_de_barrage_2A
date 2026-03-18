@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/usr/local/include/eigen3
+CXX_INCLUDES = -I/net/netud/m/cgand/libraries/eigen
 
-CXX_FLAGS = -g -Wall
+CXX_FLAGS = -Wall -g
 

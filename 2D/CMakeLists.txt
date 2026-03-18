@@ -8,14 +8,14 @@ project( PG201_TP1 VERSION 2023 )
 set( CXX_STANDARD_REQUIRED On )
 set( CXX_STANDARD C++11 )
 
-set( LIBRARY_PATH_EIGEN "/usr/local/include/eigen3" ) # à changer en ~/librarie/Eigen sur ordi ecole
+set( LIBRARY_PATH_EIGEN "~/libraries/eigen/" )
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY "build/" )
 
 # Spécifie les options passées au compilateur. Ici : l'optimisation du code binaire et les warnings.
-#set( CMAKE_CXX_FLAGS "-Wall" )
-set( CMAKE_CXX_FLAGS_DEBUG "-g -Wall" ) # Les paramètres par défaut: décommentez si vous voulez les changer
-#set( CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG" ) # Les paramètres par défaut: décommentez si vous voulez les changer
+set( CMAKE_CXX_FLAGS "-Wall" )
+# set( CMAKE_CXX_FLAGS_DEBUG "-g" ) # Les paramètres par défaut: décommentez si vous voulez les changer
+# set( CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG" ) # Les paramètres par défaut: décommentez si vous voulez les changer
 
 # Options diverses de Cmake, à ne pas modifier.
 set( CMAKE_SKIP_INSTALL_RULES True )
