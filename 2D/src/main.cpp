@@ -68,10 +68,10 @@ int main(int argc, char * argv[])
 
 
 
-    // Boucle en temps :
-
+    // Boucle en temps
     while (t<t_final)
     {
+        // Boucle sur les mailles
         for (int k=0 ; k<nb_mailles ; k++) // Boucle sur les mailles
         {
             Unp1(k)=Un(k) ;
@@ -81,22 +81,22 @@ int main(int argc, char * argv[])
             // BOUCLE A REVOIR AVEC VRAIES CL 
             for (int j=0 ; j<4 ; j++) // Boucle sur les arretes (3 arretes car triangle)
             {
-                am = m.arete_maille(j)(k) ; 
+                am = m.arete_maille[j][k]; ; 
 
-                if (m.maille_arete(am,2)==0) // if arrete de bord : maille_arete(arete_maille(j,k),1)==0
+                if (m.maille_arete[am][2]==0) // if arrete de bord : maille_arete(arete_maille(j,k),1)==0
                 {
 
-                if (m.cl_arete(am)==20) {
+                if (m.cl_arete[am]==20) {
 
                   flux = phi_b ; } // A VOIR 
 
-                else if (m.cl_arete(am)==10) {
+                else if (m.cl_arete[am]==10) {
 
-                  flux = -D*(UG-Un(j))/m.d_arete(am) ; } // A VOIR 
+                  flux = -D*(UG-Un(j))/m.d_arete[am] ; } // A VOIR 
 
-                else if (cl_arete(am)==11) {
+                else if (m.cl_arete(am)==11) {
 
-                  flux = -D*(UD-Un(j))/m.d_arete(am) ; } // A VOIR
+                  flux = -D*(UD-Un(j))/m.d_arete[am] ; } // A VOIR
                 
 
                 else 
