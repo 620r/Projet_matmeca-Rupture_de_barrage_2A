@@ -60,6 +60,47 @@ int main(int argc, char * argv[])
     double am; 
     int j, k;
 
+
+    // Lecture de fichiers
+    std::ifstream inputFile_Param(argv[1]); 
+    string line;
+    if (inputFile_Param.fail())
+    {
+      std::cout<<"N'ouvre pas"<<std::endl;
+      return 1;
+    }
+    while (getline(inputFile_Param,line))
+    {
+      istringstream iss(line);
+      string key, eq;
+      if(iss>>key>>eq)
+      {
+        if (key == "N") 
+        {
+        iss >> N; 
+        
+        sol0.resize(2*N);
+        w.resize(N);
+        }
+
+        else if (key == "y2") {iss >> sol0(3)  ; coords_presentes = true;}
+
+        else if (key == "x1") { iss >> sol0(0) ; coords_presentes = true;}
+        else if (key == "y1") { iss >> sol0(1)  ; coords_presentes = true;}
+
+      }
+    }
+
+    inputFile_Param.close(); 
+
+
+    // Affichage des données récupérées
+    std::cout<<" "<<std::endl;
+    std::cout<<"------ Données : ----------------------------------------------"<<std::endl;
+    std::cout<<" "<<std::endl;
+
+
+
     // Initialisations :
 
     ///////////////////
