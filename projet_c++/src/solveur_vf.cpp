@@ -1,6 +1,7 @@
 #include "solveur_vf.h"
 #include <iostream>
 #include <fstream>
+#include <cmath>
 using namespace std;
 using namespace Eigen;
 
@@ -84,6 +85,9 @@ void Solveur_VF::avancerTemps()
         if (_use_muscl && i >= 1 && i + 2 < n) {
             // flux MUSCL limité (ordre 2)
             flux_droite = _solveur_flux.calculerFluxLimite((int)i, true);
+            if (!isfinite(flux_droite(0)) || !isfinite(flux_droite(1))) {
+                flux_droite = _solveur_flux.calculerFlux(mailles[i], mailles[i+1]);
+            }
         } else {
             // flux ordre 1
             flux_droite = _solveur_flux.calculerFlux(mailles[i], mailles[i+1]);

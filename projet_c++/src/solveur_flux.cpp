@@ -32,6 +32,8 @@ Eigen::Vector2d Solveur_Flux::calculerFlux(const maille& m1, const maille& m2)
 Eigen::Vector2d Solveur_Flux::calculerFluxOrdre2(int i)
 {
     const std::vector<maille>& m = _maillage.getMailles();
+    const double h_dry = 1e-8;
+    const double u_max = 100.0;
     
     // Reconstruction linéaire non limitée
     // U_L = U_i + 0.5*(U_i - U_{i-1})  on calcul les valeurs reconstruites ie avec des polynomes de degré 1
@@ -45,6 +47,23 @@ Eigen::Vector2d Solveur_Flux::calculerFluxOrdre2(int i)
     // Sécurité: hauteur positive
     hL = max(hL, 1e-12);
     hR = max(hR, 1e-12);
+
+    // Évite les vitesses extrêmes quand la hauteur reconstruite est petite.
+    if (hL < h_dry) {
+        hL = h_dry;
+        qL = 0.0;
+    } else {
+        const double uL = std::clamp(qL / hL, -u_max, u_max);
+        qL = uL * hL;
+    }
+
+    if (hR < h_dry) {
+        hR = h_dry;
+        qR = 0.0;
+    } else {
+        const double uR = std::clamp(qR / hR, -u_max, u_max);
+        qR = uR * hR;
+    }
     
     // États reconstruits temporaires afin de calculer le flux de Rusanov
     maille UL(0.0, hL, qL);
@@ -76,36 +95,21 @@ Eigen::Vector2d Solveur_Flux::calculerFluxLimite(int i, bool use_muscl)
     // Pour h:
     double num_h = mailles[i+1].getHauteur() - mailles[i].getHauteur();
     double den_h = mailles[i].getHauteur()   - mailles[i-1].getHauteur();
-    
-    // Éviter division par zéro
-    if (abs(den_h) < eps) {
-        if (den_h >= 0) {
-            den_h = eps;
-        } else {
-            den_h = -eps;
-        }
+
+    double phi_h = 0.0;
+    if (abs(den_h) >= eps) {
+        const double theta_h = num_h / den_h;
+        phi_h = Limiteur::phiVanLeer(theta_h);
     }
-    
-    double theta_h = num_h / den_h;
 
     // Pour q:
     double num_q = mailles[i+1].getDebit() - mailles[i].getDebit();
     double den_q = mailles[i].getDebit()   - mailles[i-1].getDebit();
-    // Éviter division par zéro
-    if (abs(den_q) < eps) {
-        if (den_q >= 0) {
-            den_q = eps;
-        } else {
-            den_q = -eps;
-        }
+    double phi_q = 0.0;
+    if (abs(den_q) >= eps) {
+        const double theta_q = num_q / den_q;
+        phi_q = Limiteur::phiVanLeer(theta_q);
     }
-    
-    double theta_q = num_q / den_q;
-
-
-    // Limiteur van Leer
-    double phi_h = Limiteur::phiVanLeer(theta_h);
-    double phi_q = Limiteur::phiVanLeer(theta_q);
     
     // F = F^(1) + phi(theta) * (F^(2) - F^(1)) suivant formule
     Eigen::Vector2d F;
