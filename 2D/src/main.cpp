@@ -26,6 +26,7 @@ int main(int argc, char * argv[]) //le fichier données initiales
 
     double hG, hD;            //hauteurs d'eau à t0
     double tmax, CFL;         //paramètres temporels
+    double x_lim;             //parametre spatial 
     string fichier_maillage;  //fichier.mesh contenant le maillage
     //sûrement aussi des CL à lire
 
@@ -73,7 +74,7 @@ int main(int argc, char * argv[]) //le fichier données initiales
   //5 Solutions Un, Unp1, F, b
 
     int nb_mailles = m.aire_maille.size();
-    MatrixXd Un(2, nb_mailles), Unp1(2, nb_mailles), F(2, nb_mailles);
+    MatrixXd Un(nb_mailles, 2), Unp1(nb_mailles, 2), F(nb_mailles, 2);
     VectorXd b(nb_mailles);
 
     // peut-être faire une classe avec Un[1], Un[2], F[1], F[2], et b qui sont que des données ratachées aux mailles
@@ -83,19 +84,51 @@ int main(int argc, char * argv[]) //le fichier données initiales
     double t = 0 ;
     double delta_t;
 
-  //7 Flux numérique FF
+  //7 Flux numérique Flux_num
+
+    VectorXd Flux_num(2) ;
 
   //8 Initialisation Un
 
+    for (int k=0 ; k<nb_mailles ; k++)
+    {
+
+      if (m.centre_maille[k][0]<x_lim){ Un(k,0)=hG; } // Hauteur initiale 
+
+      else { Un(k,0)=hD; }
+
+      Un(k,1)=0;  // Débit initial
+
+    }
+
+    
+
+
 // ### BOUCLE EN TEMPS ###
 
+  while (t<tmax)
+  {
+
   //1 Boucle sur les mailles pour F, Unp1 et b
+
+  for (int k=0 ; k<nb_mailles ; k++)
+  {
+
+  Unp1(k)=Un(k) ;
+
+  
+
+  }
 
   //2 Mise à jour paramètres temps
 
   //3 Boucle sur les arrêtes pour FF et Unp1
 
+  //flux=0.5*(F(Un(m.maille_arete(am,2)))+F(Un(j))) +
+  //(be/2)*(Un(m.maille_arete(am,2))-Un(j)); }  // Doute : (UL-UK) ???   : 0,5(F(Uk)+F(UL)).ne-(be/2)(UL-UK)
 
+
+  }
 
 
 
