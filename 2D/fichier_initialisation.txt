@@ -1,0 +1,6 @@
+hG = 10
+hD = 1
+tmax = 1
+CFL = 1
+x_lim = 0
+fichier_maillage = test.mesh

@@ -17,32 +17,61 @@ void Maillage::lire_mesh_medit(const string &fichier) {
 
     string line;
     int nb_noeuds, nb_aretes_bord, nb_mailles;
-    int n1, n2, n3, cl;
+    int n1, n2, n3, cl, mat;
 
-    // --- ignorer 3 lignes d'en-tête
-    for(int i=0;i<3;i++) getline(in,line);
-
-    // --- lecture du nombre de noeuds et de leur coordonnées
+    // --- ignorer 2 lignes d'en-tête
+    for(int i=0;i<2;i++) getline(in,line);
+    
+    // Vertices
     getline(in,line); in >> nb_noeuds;
-    coord_noeud.resize(nb_noeuds, vector<double>(2));
-    for(int i=0;i<nb_noeuds;i++)
-        in >> coord_noeud[i][0] >> coord_noeud[i][1];
+    if (line != "Vertices") {
+        cout << "Ligne différente de Vertices : `" << line << "`\n";
+        exit(1);
+    }
 
-    // --- lecture du nombre d'arêtes de bord, du numéro de chaque noeud de l'arrête et de la CL associée
+    // --- lecture des coordonnées des noeuds
+    coord_noeud.resize(nb_noeuds, vector<double>(2));
+    for(int i=0;i<nb_noeuds;i++) {
+        if (!(in >> coord_noeud[i][0] >> coord_noeud[i][1])) {
+            cerr << "Erreur lecture des coordonnées du noeud " << i << "\n";
+            return; // ou break si tu veux continuer
+        }
+    }
+
+    // Edges
     getline(in,line); getline(in,line); in >> nb_aretes_bord;
+    if (line != "Edges") {
+        cout << "Ligne différente de Edges : `" << line << "`\n";
+        exit(1);
+    }
+
+    // --- lecture du numéro de chaque noeud de l'arrête et de la CL associée
     noeud_arete_bord.resize(nb_aretes_bord, vector<int>(2));
     cl_arete_bord.resize(nb_aretes_bord);
     for(int i=0;i<nb_aretes_bord;i++){
-        in >> n1 >> n2 >> cl;
+        if (!(in >> n1 >> n2 >> cl)) {
+            cerr << "Erreur lecture bords " << i << "\n";
+            return;
+        }
         noeud_arete_bord[i][0] = n1-1;
         noeud_arete_bord[i][1] = n2-1;
         cl_arete_bord[i] = cl;
     }
-    // --- lecture du nombre de mailles et du numéro de chaque noeud de la maille
+
+    // Triangles
     getline(in,line); getline(in,line); in >> nb_mailles;
+    if (line != "Triangles") {
+        cout << "Ligne différente de Triangles : `" << line << "`\n";
+        exit(1);
+    }
+
+    // --- lecture du numéro de chaque noeud de la maille et de la CL associée
     noeud_maille.resize(nb_mailles, vector<int>(3));
     for(int i=0;i<nb_mailles;i++){
-        in >> n1 >> n2 >> n3;
+        if (!(in >> n1 >> n2 >> n3 >> mat)) {
+            cerr << "Erreur lecture triangle " << i << "\n";
+            return;
+        }
         noeud_maille[i][0] = n1-1;
         noeud_maille[i][1] = n2-1;
         noeud_maille[i][2] = n3-1;

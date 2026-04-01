@@ -17,12 +17,14 @@ int main(int argc, char * argv[]) //le fichier données initiales
 // ### DECLARATIONS et INITIALISATIONS ###
 
   //1 Outils boucles
+  cout << "//1 Outils boucles" << endl;
 
     double sum;
     double am;
     int j, k;
 
   //2 Données initiales
+  cout << "//2 Données initiales" << endl;
 
     double hG, hD;            //hauteurs d'eau à t0
     double tmax, CFL;         //paramètres temporels
@@ -30,13 +32,14 @@ int main(int argc, char * argv[]) //le fichier données initiales
     string fichier_maillage;  //fichier.mesh contenant le maillage
     //sûrement aussi des CL à lire
 
-  //3 Lecture fichier des données initiales
+  //3 Lecture du fichier d'initialisation
+  cout << "//3 Lecture fichier d'initialisation" << endl;
 
     ifstream fichier_initialisation(argv[1]);
     string line;
     if (fichier_initialisation.fail())
     {
-      cout << "N'ouvre pas" << endl;
+      cout << "Pas de fichier d'initialisation" << endl;
       return 1;
     }
     while (getline(fichier_initialisation,line))
@@ -49,6 +52,7 @@ int main(int argc, char * argv[]) //le fichier données initiales
         else if (key == "hD") {iss >> hD ;}
         else if (key == "tmax") { iss >> tmax ;}
         else if (key == "CFL") { iss >> CFL ;}
+        else if (key == "x_lim") { iss >> x_lim ;}
         else if (key == "fichier_maillage") { iss >> fichier_maillage ;}
         //sûrement aussi des CL à lire 
       }
@@ -58,37 +62,40 @@ int main(int argc, char * argv[]) //le fichier données initiales
 
     // Affichage des données récupérées
     cout << " " << endl;
-    cout << "------ Données : ------" << endl;
-    cout << "hG :" << hG << "hD :" << hD << endl;
-    // écrire les autres
+    cout << "hG :" << hG << ",  hD :" << hD << endl;
+    cout << "tmax :" << tmax << ",  CFL :" << CFL << endl;
+    cout << "x_lim :" << x_lim << ",  fichier_maillage :" << fichier_maillage << endl;
     cout << " " << endl;
 
-  //4 Maillage .m
+  //4 Classe Maillage .m 
+  cout << "//4 Maillage .m" << endl;
 
     Maillage m;
+    
     m.lire_mesh_medit(fichier_maillage);
     m.calcul_connectivite();
     m.calcul_aires();
     m.calcul_centres_et_aretes();
 
-  //5 Solutions Un, Unp1, F, b
+  //5 Matrices/vecteurs Un, Unp1, F, b, Flux_num
+  cout << "//5 Matrices/vecteurs" << endl;
 
     int nb_mailles = m.aire_maille.size();
+
     MatrixXd Un(nb_mailles, 2), Unp1(nb_mailles, 2), F(nb_mailles, 2);
     VectorXd b(nb_mailles);
+    VectorXd Flux_num(2);
 
     // peut-être faire une classe avec Un[1], Un[2], F[1], F[2], et b qui sont que des données ratachées aux mailles
 
   //6 Paramètres temporels
+  cout << "//6 Paramètres temporels" << endl;
 
     double t = 0 ;
     double delta_t;
 
-  //7 Flux numérique Flux_num
-
-    VectorXd Flux_num(2) ;
-
-  //8 Initialisation Un
+  //7 Initialisation Un
+  cout << "//7 Initialisation Un" << endl;
 
     for (int k=0 ; k<nb_mailles ; k++)
     {
@@ -101,31 +108,30 @@ int main(int argc, char * argv[]) //le fichier données initiales
 
     }
 
-    
 
 
 // ### BOUCLE EN TEMPS ###
 
-  while (t<tmax)
+  //while (t<tmax)
   {
 
   //1 Boucle sur les mailles pour F, Unp1 et b
 
-  for (int k=0 ; k<nb_mailles ; k++)
-  {
 
-  Unp1(k)=Un(k) ;
+    for (int k=0 ; k<nb_mailles ; k++)
+    {
 
-  
+    Unp1(k)=Un(k) ;
 
-  }
+    
+
+    }
 
   //2 Mise à jour paramètres temps
 
   //3 Boucle sur les arrêtes pour FF et Unp1
 
-  //flux=0.5*(F(Un(m.maille_arete(am,2)))+F(Un(j))) +
-  //(be/2)*(Un(m.maille_arete(am,2))-Un(j)); }  // Doute : (UL-UK) ???   : 0,5(F(Uk)+F(UL)).ne-(be/2)(UL-UK)
+  
 
 
   }
@@ -167,7 +173,8 @@ int main(int argc, char * argv[]) //le fichier données initiales
 
 //       flux=0.5*(F(Un(m.maille_arete(am,2)))+F(Un(j))) +
 //       (be/2)*(Un(m.maille_arete(am,2))-Un(j)); }  // Doute : (UL-UK) ???   : 0,5(F(Uk)+F(UL)).ne-(be/2)(UL-UK)
-
+//flux=0.5*(F(Un(m.maille_arete(am,2)))+F(Un(j))) +
+  //(be/2)*(Un(m.maille_arete(am,2))-Un(j)); }  // Doute : (UL-UK) ???   : 0,5(F(Uk)+F(UL)).ne-(be/2)(UL-UK)
 //     }
 
 //     // 2) Boucle sur les arrêtes pour le calcul de be (mêmes vp que lors du S7 ???)
