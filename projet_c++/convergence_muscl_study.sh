@@ -1,125 +1,59 @@
 #!/usr/bin/env bash
 # filepath: convergence_muscl_study.sh
 
-# Compiler
+# Study objective:
+# - Spatial convergence by mesh refinement campaign
+# - Temporal convergence by CFL refinement campaign (CFL <= 0.45)
+# - Order estimated with log-log linear regression for robustness
+
 echo "Compilation..."
 make
 
 if [ ! -f build/projet_c++_S7_Debug ]; then
-    echo "Erreur: L'exécutable n'a pas pu être compilé"
+    echo "Erreur: L'executable n'a pas pu etre compile"
     exit 1
 fi
 
-echo "===== ÉTUDE DE CONVERGENCE (ESPACE ET TEMPS) - MUSCL ORDRE 2 ====="
+echo "===== ETUDE DE CONVERGENCE (ESPACE ET TEMPS) - MUSCL ORDRE 2 ====="
 echo "Type,Test,deltax,cfl,erreur_h_L2,erreur_q_L2,erreur_h_L1,erreur_q_L1,erreur_h_L2_mask,erreur_q_L2_mask,erreur_h_L1_mask,erreur_q_L1_mask" > convergence_results_muscl.csv
 
-# Créer des fichiers temporaires avec différents CFL - dernier paramètre 2 = MUSCL ordre 2
-echo "0. 5. 0.05 premiere_sortie 100 2"  > /tmp/init_test_temps_cfl_05_muscl.txt
-echo "0. 5. 0.9 premiere_sortie 100 2"   > /tmp/init_test_temps_cfl_09_muscl.txt
-echo "0. 5. 0.45 premiere_sortie 100 2"  > /tmp/init_test_temps_cfl_045_muscl.txt
-echo "0. 5. 0.225 premiere_sortie 100 2" > /tmp/init_test_temps_cfl_0225_muscl.txt
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT
 
-# ====== CONVERGENCE SPATIALE (maillage raffiné, même CFL) ======
-echo ""
-echo "╔═════════════════════════════════════════════╗"
-echo "║   TEST 1 MUSCL: CONVERGENCE EN ESPACE       ║"
-echo "║   (CFL fixe, maillage raffiné)              ║"
-echo "╚═════════════════════════════════════════════╝"
+create_mesh_init() {
+    local n="$1"
+    local file="$2"
+    cat > "$file" <<EOF
+20
+50
 
-# Test 1a : maillage initial
-echo ""
-echo "Test 1a MUSCL : Maillage initial (1000 subdivisions, CFL=0.05)"
-output1a=$(./build/projet_c++_S7_Debug initialisation_maillage/init_test_maillage.txt /tmp/init_test_temps_cfl_05_muscl.txt 2>&1)
-deltax1a=$(echo "$output1a" | grep "Delta x:" | tail -1 | awk '{print $NF}')
-erreur_h1a=$(echo "$output1a" | grep "Erreur finale sur la hauteur:" | tail -1 | awk '{print $NF}')
-erreur_q1a=$(echo "$output1a" | grep "Erreur finale sur le débit:" | tail -1 | awk '{print $NF}')
-erreur_h1a_L1=$(echo "$output1a" | grep "Erreur finale l1(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q1a_L1=$(echo "$output1a" | grep "Erreur finale l1(débit):" | tail -1 | awk '{print $NF}')
-erreur_h1a_L2_mask=$(echo "$output1a" | grep "Erreur finale l2 masquée(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q1a_L2_mask=$(echo "$output1a" | grep "Erreur finale l2 masquée(débit):" | tail -1 | awk '{print $NF}')
-erreur_h1a_L1_mask=$(echo "$output1a" | grep "Erreur finale l1 masquée(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q1a_L1_mask=$(echo "$output1a" | grep "Erreur finale l1 masquée(débit):" | tail -1 | awk '{print $NF}')
-echo "  → Δx=$deltax1a, Erreur h(L2)=$erreur_h1a, Erreur q(L2)=$erreur_q1a, Erreur h(L1)=$erreur_h1a_L1, Erreur q(L1)=$erreur_q1a_L1"
-echo "Spatial_MUSCL,1a,$deltax1a,0.05,$erreur_h1a,$erreur_q1a,$erreur_h1a_L1,$erreur_q1a_L1,$erreur_h1a_L2_mask,$erreur_q1a_L2_mask,$erreur_h1a_L1_mask,$erreur_q1a_L1_mask" >> convergence_results_muscl.csv
+$n
 
-# Test 1b : maillage raffiné x2
-echo ""
-echo "Test 1b MUSCL : Maillage x2 (2000 subdivisions, CFL=0.05)"
-output1b=$(./build/projet_c++_S7_Debug initialisation_maillage/init_test_maillage_2000.txt /tmp/init_test_temps_cfl_05_muscl.txt 2>&1)
-deltax1b=$(echo "$output1b" | grep "Delta x:" | tail -1 | awk '{print $NF}')
-erreur_h1b=$(echo "$output1b" | grep "Erreur finale sur la hauteur:" | tail -1 | awk '{print $NF}')
-erreur_q1b=$(echo "$output1b" | grep "Erreur finale sur le débit:" | tail -1 | awk '{print $NF}')
-erreur_h1b_L1=$(echo "$output1b" | grep "Erreur finale l1(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q1b_L1=$(echo "$output1b" | grep "Erreur finale l1(débit):" | tail -1 | awk '{print $NF}')
-erreur_h1b_L2_mask=$(echo "$output1b" | grep "Erreur finale l2 masquée(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q1b_L2_mask=$(echo "$output1b" | grep "Erreur finale l2 masquée(débit):" | tail -1 | awk '{print $NF}')
-erreur_h1b_L1_mask=$(echo "$output1b" | grep "Erreur finale l1 masquée(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q1b_L1_mask=$(echo "$output1b" | grep "Erreur finale l1 masquée(débit):" | tail -1 | awk '{print $NF}')
-echo "  → Δx=$deltax1b, Erreur h(L2)=$erreur_h1b, Erreur q(L2)=$erreur_q1b, Erreur h(L1)=$erreur_h1b_L1, Erreur q(L1)=$erreur_q1b_L1"
-echo "Spatial_MUSCL,1b,$deltax1b,0.05,$erreur_h1b,$erreur_q1b,$erreur_h1b_L1,$erreur_q1b_L1,$erreur_h1b_L2_mask,$erreur_q1b_L2_mask,$erreur_h1b_L1_mask,$erreur_q1b_L1_mask" >> convergence_results_muscl.csv
+10
+1
+EOF
+}
 
-# ====== CONVERGENCE TEMPORELLE (maillage très fin fixe, CFL divisé par 2) ======
-echo ""
-echo "╔═════════════════════════════════════════════╗"
-echo "║   TEST 2 MUSCL: CONVERGENCE EN TEMPS        ║"
-echo "║   (maillage fin N=8000, CFL varié)          ║"
-echo "╚═════════════════════════════════════════════╝"
+create_time_init() {
+    local cfl="$1"
+    local file="$2"
+    # Last parameter 2 = MUSCL order 2
+    echo "0. 5. $cfl premiere_sortie 100 2" > "$file"
+}
 
-# Test 2a : maillage très fin, CFL = 0.9
-echo ""
-echo "Test 2a MUSCL : Maillage très fin (8000 subdivisions, CFL=0.9)"
-output2a=$(./build/projet_c++_S7_Debug initialisation_maillage/init_test_maillage_8000.txt /tmp/init_test_temps_cfl_09_muscl.txt 2>&1)
-deltax2a=$(echo "$output2a" | grep "Delta x:" | tail -1 | awk '{print $NF}')
-erreur_h2a=$(echo "$output2a" | grep "Erreur finale sur la hauteur:" | tail -1 | awk '{print $NF}')
-erreur_q2a=$(echo "$output2a" | grep "Erreur finale sur le débit:" | tail -1 | awk '{print $NF}')
-erreur_h2a_L1=$(echo "$output2a" | grep "Erreur finale l1(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q2a_L1=$(echo "$output2a" | grep "Erreur finale l1(débit):" | tail -1 | awk '{print $NF}')
-erreur_h2a_L2_mask=$(echo "$output2a" | grep "Erreur finale l2 masquée(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q2a_L2_mask=$(echo "$output2a" | grep "Erreur finale l2 masquée(débit):" | tail -1 | awk '{print $NF}')
-erreur_h2a_L1_mask=$(echo "$output2a" | grep "Erreur finale l1 masquée(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q2a_L1_mask=$(echo "$output2a" | grep "Erreur finale l1 masquée(débit):" | tail -1 | awk '{print $NF}')
-echo "  → Δx=$deltax2a, Erreur h(L2)=$erreur_h2a, Erreur q(L2)=$erreur_q2a, Erreur h(L1)=$erreur_h2a_L1, Erreur q(L1)=$erreur_q2a_L1"
-echo "Temporal_MUSCL,2a,$deltax2a,0.9,$erreur_h2a,$erreur_q2a,$erreur_h2a_L1,$erreur_q2a_L1,$erreur_h2a_L2_mask,$erreur_q2a_L2_mask,$erreur_h2a_L1_mask,$erreur_q2a_L1_mask" >> convergence_results_muscl.csv
+extract_metric() {
+    local text="$1"
+    local label="$2"
+    local value
 
-# Test 2b : maillage très fin, CFL = 0.45
-echo ""
-echo "Test 2b MUSCL : Maillage très fin (8000 subdivisions, CFL=0.45)"
-output2b=$(./build/projet_c++_S7_Debug initialisation_maillage/init_test_maillage_8000.txt /tmp/init_test_temps_cfl_045_muscl.txt 2>&1)
-deltax2b=$(echo "$output2b" | grep "Delta x:" | tail -1 | awk '{print $NF}')
-erreur_h2b=$(echo "$output2b" | grep "Erreur finale sur la hauteur:" | tail -1 | awk '{print $NF}')
-erreur_q2b=$(echo "$output2b" | grep "Erreur finale sur le débit:" | tail -1 | awk '{print $NF}')
-erreur_h2b_L1=$(echo "$output2b" | grep "Erreur finale l1(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q2b_L1=$(echo "$output2b" | grep "Erreur finale l1(débit):" | tail -1 | awk '{print $NF}')
-erreur_h2b_L2_mask=$(echo "$output2b" | grep "Erreur finale l2 masquée(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q2b_L2_mask=$(echo "$output2b" | grep "Erreur finale l2 masquée(débit):" | tail -1 | awk '{print $NF}')
-erreur_h2b_L1_mask=$(echo "$output2b" | grep "Erreur finale l1 masquée(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q2b_L1_mask=$(echo "$output2b" | grep "Erreur finale l1 masquée(débit):" | tail -1 | awk '{print $NF}')
-echo "  → Δx=$deltax2b, Erreur h(L2)=$erreur_h2b, Erreur q(L2)=$erreur_q2b, Erreur h(L1)=$erreur_h2b_L1, Erreur q(L1)=$erreur_q2b_L1"
-echo "Temporal_MUSCL,2b,$deltax2b,0.45,$erreur_h2b,$erreur_q2b,$erreur_h2b_L1,$erreur_q2b_L1,$erreur_h2b_L2_mask,$erreur_q2b_L2_mask,$erreur_h2b_L1_mask,$erreur_q2b_L1_mask" >> convergence_results_muscl.csv
+    value=$(printf "%s\n" "$text" | grep -F "$label" | tail -1 | awk '{print $NF}')
+    if [ -z "$value" ]; then
+        echo "nan"
+    else
+        echo "$value"
+    fi
+}
 
-# Test 2c : maillage très fin, CFL = 0.225
-echo ""
-echo "Test 2c MUSCL : Maillage très fin (8000 subdivisions, CFL=0.225)"
-output2c=$(./build/projet_c++_S7_Debug initialisation_maillage/init_test_maillage_8000.txt /tmp/init_test_temps_cfl_0225_muscl.txt 2>&1)
-deltax2c=$(echo "$output2c" | grep "Delta x:" | tail -1 | awk '{print $NF}')
-erreur_h2c=$(echo "$output2c" | grep "Erreur finale sur la hauteur:" | tail -1 | awk '{print $NF}')
-erreur_q2c=$(echo "$output2c" | grep "Erreur finale sur le débit:" | tail -1 | awk '{print $NF}')
-erreur_h2c_L1=$(echo "$output2c" | grep "Erreur finale l1(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q2c_L1=$(echo "$output2c" | grep "Erreur finale l1(débit):" | tail -1 | awk '{print $NF}')
-erreur_h2c_L2_mask=$(echo "$output2c" | grep "Erreur finale l2 masquée(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q2c_L2_mask=$(echo "$output2c" | grep "Erreur finale l2 masquée(débit):" | tail -1 | awk '{print $NF}')
-erreur_h2c_L1_mask=$(echo "$output2c" | grep "Erreur finale l1 masquée(hauteur):" | tail -1 | awk '{print $NF}')
-erreur_q2c_L1_mask=$(echo "$output2c" | grep "Erreur finale l1 masquée(débit):" | tail -1 | awk '{print $NF}')
-echo "  → Δx=$deltax2c, Erreur h(L2)=$erreur_h2c, Erreur q(L2)=$erreur_q2c, Erreur h(L1)=$erreur_h2c_L1, Erreur q(L1)=$erreur_q2c_L1"
-echo "Temporal_MUSCL,2c,$deltax2c,0.225,$erreur_h2c,$erreur_q2c,$erreur_h2c_L1,$erreur_q2c_L1,$erreur_h2c_L2_mask,$erreur_q2c_L2_mask,$erreur_h2c_L1_mask,$erreur_q2c_L1_mask" >> convergence_results_muscl.csv
-
-# ====== CALCULS DES ORDRES DE CONVERGENCE ======
-echo ""
-echo "╔═════════════════════════════════════════════╗"
-echo "║   RÉSULTATS CONVERGENCE MUSCL               ║"
-echo "╚═════════════════════════════════════════════╝"
-
-# Fonctions robustes (gèrent les notations scientifiques e+xx)
 safe_ratio() {
     awk -v a="$1" -v b="$2" 'BEGIN {
         if (a=="" || b=="" || !(a+0==a) || !(b+0==b) || b==0) { print "nan"; }
@@ -134,131 +68,253 @@ safe_order() {
     }'
 }
 
-# Convergence spatiale
-echo ""
-echo "═══ CONVERGENCE EN ESPACE (MUSCL) ═══"
-ratio_deltax=$(safe_ratio "$deltax1a" "$deltax1b")
-ratio_erreur_h_spatial=$(safe_ratio "$erreur_h1a" "$erreur_h1b")
-ratio_erreur_q_spatial=$(safe_ratio "$erreur_q1a" "$erreur_q1b")
-ratio_erreur_h_spatial_L1=$(safe_ratio "$erreur_h1a_L1" "$erreur_h1b_L1")
-ratio_erreur_q_spatial_L1=$(safe_ratio "$erreur_q1a_L1" "$erreur_q1b_L1")
+regression_order() {
+    local x_values="$1"
+    local y_values="$2"
 
-ordre_h_spatial=$(safe_order "$ratio_erreur_h_spatial" "$ratio_deltax")
-ordre_q_spatial=$(safe_order "$ratio_erreur_q_spatial" "$ratio_deltax")
-ordre_h_spatial_L1=$(safe_order "$ratio_erreur_h_spatial_L1" "$ratio_deltax")
-ordre_q_spatial_L1=$(safe_order "$ratio_erreur_q_spatial_L1" "$ratio_deltax")
+    awk -v xs="$x_values" -v ys="$y_values" 'BEGIN {
+        nx = split(xs, xarr, " ");
+        ny = split(ys, yarr, " ");
+        if (nx != ny || nx < 2) { print "nan"; exit; }
 
-echo "Rapport Δx: $ratio_deltax (doit être ≈ 2)"
-echo "Rapport erreur hauteur (L2): $ratio_erreur_h_spatial"
-echo "Rapport erreur débit   (L2): $ratio_erreur_q_spatial"
-echo "Rapport erreur hauteur (L1): $ratio_erreur_h_spatial_L1"
-echo "Rapport erreur débit   (L1): $ratio_erreur_q_spatial_L1"
+        n = 0;
+        sumx = 0; sumy = 0; sumxx = 0; sumxy = 0;
+
+        for (i=1; i<=nx; i++) {
+            x = xarr[i] + 0;
+            y = yarr[i] + 0;
+            if (!(x > 0) || !(y > 0)) { continue; }
+
+            lx = log(x);
+            ly = log(y);
+
+            n++;
+            sumx += lx;
+            sumy += ly;
+            sumxx += lx * lx;
+            sumxy += lx * ly;
+        }
+
+        if (n < 2) { print "nan"; exit; }
+
+        den = n * sumxx - sumx * sumx;
+        if (den == 0) { print "nan"; exit; }
+
+        slope = (n * sumxy - sumx * sumy) / den;
+        printf "%.6f", slope;
+    }'
+}
+
+run_solver() {
+    local mesh_init="$1"
+    local time_init="$2"
+
+    local output
+    output=$(./build/projet_c++_S7_Debug "$mesh_init" "$time_init" 2>&1)
+    local status=$?
+
+    if [ "$status" -ne 0 ]; then
+        echo "ERREUR_SOLVEUR"
+        echo "$output"
+        return "$status"
+    fi
+
+    echo "$output"
+    return 0
+}
+
+# -----------------------------
+# CAMPAGNE SPATIALE (CFL fixe)
+# -----------------------------
 echo ""
+echo "╔═════════════════════════════════════════════╗"
+echo "║   CAMPAGNE MUSCL: CONVERGENCE EN ESPACE     ║"
+echo "║   (CFL fixe, maillage raffine)              ║"
+echo "╚═════════════════════════════════════════════╝"
+
+SPATIAL_CFL="0.05"
+SPATIAL_N_LIST="1000 2000 4000"
+SPATIAL_TIME_INIT="$TMP_DIR/time_spatial.txt"
+create_time_init "$SPATIAL_CFL" "$SPATIAL_TIME_INIT"
+
+spatial_dxs=""
+spatial_ehL2=""
+spatial_eqL2=""
+spatial_ehL1=""
+spatial_eqL1=""
+
+spatial_prev_dx=""
+spatial_prev_ehL2=""
+spatial_prev_eqL2=""
+
+spatial_idx=1
+for n in $SPATIAL_N_LIST; do
+    mesh_init="$TMP_DIR/mesh_${n}.txt"
+    create_mesh_init "$n" "$mesh_init"
+
+    echo ""
+    echo "Test S${spatial_idx} MUSCL : Maillage N=$n (CFL=$SPATIAL_CFL)"
+
+    out=$(run_solver "$mesh_init" "$SPATIAL_TIME_INIT")
+    status=$?
+    if [ "$status" -ne 0 ]; then
+        echo "Execution echouee pour N=$n"
+        echo "$out"
+        exit 1
+    fi
+
+    dx=$(extract_metric "$out" "Delta x:")
+    ehL2=$(extract_metric "$out" "Erreur finale sur la hauteur:")
+    eqL2=$(extract_metric "$out" "Erreur finale sur le débit:")
+    ehL1=$(extract_metric "$out" "Erreur finale l1(hauteur):")
+    eqL1=$(extract_metric "$out" "Erreur finale l1(débit):")
+    ehL2m=$(extract_metric "$out" "Erreur finale l2 masquée(hauteur):")
+    eqL2m=$(extract_metric "$out" "Erreur finale l2 masquée(débit):")
+    ehL1m=$(extract_metric "$out" "Erreur finale l1 masquée(hauteur):")
+    eqL1m=$(extract_metric "$out" "Erreur finale l1 masquée(débit):")
+
+    echo "  -> dx=$dx, Erreur h(L2)=$ehL2, Erreur q(L2)=$eqL2, Erreur h(L1)=$ehL1, Erreur q(L1)=$eqL1"
+    echo "Spatial_MUSCL,S${spatial_idx},$dx,$SPATIAL_CFL,$ehL2,$eqL2,$ehL1,$eqL1,$ehL2m,$eqL2m,$ehL1m,$eqL1m" >> convergence_results_muscl.csv
+
+    spatial_dxs="$spatial_dxs $dx"
+    spatial_ehL2="$spatial_ehL2 $ehL2"
+    spatial_eqL2="$spatial_eqL2 $eqL2"
+    spatial_ehL1="$spatial_ehL1 $ehL1"
+    spatial_eqL1="$spatial_eqL1 $eqL1"
+
+    if [ -n "$spatial_prev_dx" ]; then
+        ratio_dx=$(safe_ratio "$spatial_prev_dx" "$dx")
+        ratio_h=$(safe_ratio "$spatial_prev_ehL2" "$ehL2")
+        ratio_q=$(safe_ratio "$spatial_prev_eqL2" "$eqL2")
+        p_h_local=$(safe_order "$ratio_h" "$ratio_dx")
+        p_q_local=$(safe_order "$ratio_q" "$ratio_dx")
+        echo "     ordre local (L2): h=$p_h_local, q=$p_q_local"
+    fi
+
+    spatial_prev_dx="$dx"
+    spatial_prev_ehL2="$ehL2"
+    spatial_prev_eqL2="$eqL2"
+    spatial_idx=$((spatial_idx + 1))
+done
+
+ordre_spatial_reg_hL2=$(regression_order "$spatial_dxs" "$spatial_ehL2")
+ordre_spatial_reg_qL2=$(regression_order "$spatial_dxs" "$spatial_eqL2")
+ordre_spatial_reg_hL1=$(regression_order "$spatial_dxs" "$spatial_ehL1")
+ordre_spatial_reg_qL1=$(regression_order "$spatial_dxs" "$spatial_eqL1")
+
+# slope(log(e), log(dx)) should be positive p in e ~ C * dx^p
+# regression_order already returns that slope directly.
+
+# ------------------------------
+# CAMPAGNE TEMPORELLE (N fixe)
+# ------------------------------
+echo ""
+echo "╔═════════════════════════════════════════════╗"
+echo "║   CAMPAGNE MUSCL: CONVERGENCE EN TEMPS      ║"
+echo "║   (N fixe, CFL <= 0.45)                     ║"
+echo "╚═════════════════════════════════════════════╝"
+
+TEMPORAL_N="2000"
+TEMPORAL_CFL_LIST="0.45 0.225 0.1125 0.05625"
+TEMPORAL_MESH_INIT="$TMP_DIR/mesh_temporal_${TEMPORAL_N}.txt"
+create_mesh_init "$TEMPORAL_N" "$TEMPORAL_MESH_INIT"
+
+temporal_cfls=""
+temporal_ehL2=""
+temporal_eqL2=""
+temporal_ehL1=""
+temporal_eqL1=""
+
+temporal_prev_cfl=""
+temporal_prev_ehL2=""
+temporal_prev_eqL2=""
+
+temporal_idx=1
+for cfl in $TEMPORAL_CFL_LIST; do
+    time_init="$TMP_DIR/time_temporal_${cfl}.txt"
+    create_time_init "$cfl" "$time_init"
+
+    echo ""
+    echo "Test T${temporal_idx} MUSCL : Maillage N=$TEMPORAL_N (CFL=$cfl)"
+
+    out=$(run_solver "$TEMPORAL_MESH_INIT" "$time_init")
+    status=$?
+    if [ "$status" -ne 0 ]; then
+        echo "Execution echouee pour CFL=$cfl"
+        echo "$out"
+        exit 1
+    fi
+
+    dx=$(extract_metric "$out" "Delta x:")
+    ehL2=$(extract_metric "$out" "Erreur finale sur la hauteur:")
+    eqL2=$(extract_metric "$out" "Erreur finale sur le débit:")
+    ehL1=$(extract_metric "$out" "Erreur finale l1(hauteur):")
+    eqL1=$(extract_metric "$out" "Erreur finale l1(débit):")
+    ehL2m=$(extract_metric "$out" "Erreur finale l2 masquée(hauteur):")
+    eqL2m=$(extract_metric "$out" "Erreur finale l2 masquée(débit):")
+    ehL1m=$(extract_metric "$out" "Erreur finale l1 masquée(hauteur):")
+    eqL1m=$(extract_metric "$out" "Erreur finale l1 masquée(débit):")
+
+    echo "  -> dx=$dx, Erreur h(L2)=$ehL2, Erreur q(L2)=$eqL2, Erreur h(L1)=$ehL1, Erreur q(L1)=$eqL1"
+    echo "Temporal_MUSCL,T${temporal_idx},$dx,$cfl,$ehL2,$eqL2,$ehL1,$eqL1,$ehL2m,$eqL2m,$ehL1m,$eqL1m" >> convergence_results_muscl.csv
+
+    temporal_cfls="$temporal_cfls $cfl"
+    temporal_ehL2="$temporal_ehL2 $ehL2"
+    temporal_eqL2="$temporal_eqL2 $eqL2"
+    temporal_ehL1="$temporal_ehL1 $ehL1"
+    temporal_eqL1="$temporal_eqL1 $eqL1"
+
+    if [ -n "$temporal_prev_cfl" ]; then
+        ratio_cfl=$(safe_ratio "$temporal_prev_cfl" "$cfl")
+        ratio_h=$(safe_ratio "$temporal_prev_ehL2" "$ehL2")
+        ratio_q=$(safe_ratio "$temporal_prev_eqL2" "$eqL2")
+        p_h_local=$(safe_order "$ratio_h" "$ratio_cfl")
+        p_q_local=$(safe_order "$ratio_q" "$ratio_cfl")
+        echo "     ordre local (L2): h=$p_h_local, q=$p_q_local"
+    fi
+
+    temporal_prev_cfl="$cfl"
+    temporal_prev_ehL2="$ehL2"
+    temporal_prev_eqL2="$eqL2"
+    temporal_idx=$((temporal_idx + 1))
+done
+
+# For fixed N, dt is proportional to CFL, so regression vs CFL gives temporal order
+ordre_temporal_reg_hL2=$(regression_order "$temporal_cfls" "$temporal_ehL2")
+ordre_temporal_reg_qL2=$(regression_order "$temporal_cfls" "$temporal_eqL2")
+ordre_temporal_reg_hL1=$(regression_order "$temporal_cfls" "$temporal_ehL1")
+ordre_temporal_reg_qL1=$(regression_order "$temporal_cfls" "$temporal_eqL1")
+
+echo ""
+echo "╔═════════════════════════════════════════════╗"
+echo "║   RESULTATS CONVERGENCE MUSCL (REGRESSION)  ║"
+echo "╚═════════════════════════════════════════════╝"
+
+echo ""
+echo "=== ESPACE (regression log-log) ==="
 printf "┌─────────────────────────────────────────────┐\n"
-printf "│ %-20s │ %-18s │\n" "  Ordre spatial MUSCL" "Valeur (≈2.0)"
+printf "│ %-26s │ %-10s │\n" "Ordre spatial MUSCL" "Valeur"
 printf "├─────────────────────────────────────────────┤\n"
-printf "│ %-20s │ %18s │\n" "  Hauteur (L2)" "$ordre_h_spatial"
-printf "│ %-20s │ %18s │\n" "  Débit   (L2)" "$ordre_q_spatial"
-printf "│ %-20s │ %18s │\n" "  Hauteur (L1)" "$ordre_h_spatial_L1"
-printf "│ %-20s │ %18s │\n" "  Débit   (L1)" "$ordre_q_spatial_L1"
+printf "│ %-26s │ %10s │\n" "Hauteur (L2)" "$ordre_spatial_reg_hL2"
+printf "│ %-26s │ %10s │\n" "Debit   (L2)" "$ordre_spatial_reg_qL2"
+printf "│ %-26s │ %10s │\n" "Hauteur (L1)" "$ordre_spatial_reg_hL1"
+printf "│ %-26s │ %10s │\n" "Debit   (L1)" "$ordre_spatial_reg_qL1"
 printf "└─────────────────────────────────────────────┘\n"
 
-# Convergence temporelle
 echo ""
-echo "═══ CONVERGENCE EN TEMPS (MUSCL) ═══"
-ratio_erreur_h_temporal=$(safe_ratio "$erreur_h2a" "$erreur_h2b")
-ratio_erreur_q_temporal=$(safe_ratio "$erreur_q2a" "$erreur_q2b")
-ratio_erreur_h_temporal_L1=$(safe_ratio "$erreur_h2a_L1" "$erreur_h2b_L1")
-ratio_erreur_q_temporal_L1=$(safe_ratio "$erreur_q2a_L1" "$erreur_q2b_L1")
-ratio_cfl=$(safe_ratio "0.9" "0.45")
-
-# Masqué (excluant discontinuités)
-ratio_erreur_h_temporal_mask_L2=$(safe_ratio "$erreur_h2a_L2_mask" "$erreur_h2b_L2_mask")
-ratio_erreur_q_temporal_mask_L2=$(safe_ratio "$erreur_q2a_L2_mask" "$erreur_q2b_L2_mask")
-ratio_erreur_h_temporal_mask_L1=$(safe_ratio "$erreur_h2a_L1_mask" "$erreur_h2b_L1_mask")
-ratio_erreur_q_temporal_mask_L1=$(safe_ratio "$erreur_q2a_L1_mask" "$erreur_q2b_L1_mask")
-
-ordre_h_temporal=$(safe_order "$ratio_erreur_h_temporal" "$ratio_cfl")
-ordre_q_temporal=$(safe_order "$ratio_erreur_q_temporal" "$ratio_cfl")
-ordre_h_temporal_L1=$(safe_order "$ratio_erreur_h_temporal_L1" "$ratio_cfl")
-ordre_q_temporal_L1=$(safe_order "$ratio_erreur_q_temporal_L1" "$ratio_cfl")
-
-ordre_h_temporal_mask_L2=$(safe_order "$ratio_erreur_h_temporal_mask_L2" "$ratio_cfl")
-ordre_q_temporal_mask_L2=$(safe_order "$ratio_erreur_q_temporal_mask_L2" "$ratio_cfl")
-ordre_h_temporal_mask_L1=$(safe_order "$ratio_erreur_h_temporal_mask_L1" "$ratio_cfl")
-ordre_q_temporal_mask_L1=$(safe_order "$ratio_erreur_q_temporal_mask_L1" "$ratio_cfl")
-
-# Calcul ordre entre 2b et 2c aussi
-ratio_erreur_h_temporal_2=$(safe_ratio "$erreur_h2b" "$erreur_h2c")
-ratio_erreur_q_temporal_2=$(safe_ratio "$erreur_q2b" "$erreur_q2c")
-ratio_erreur_h_temporal_2_L1=$(safe_ratio "$erreur_h2b_L1" "$erreur_h2c_L1")
-ratio_erreur_q_temporal_2_L1=$(safe_ratio "$erreur_q2b_L1" "$erreur_q2c_L1")
-ratio_cfl_2=$(safe_ratio "0.45" "0.225")
-
-# Masqué (2b→2c)
-ratio_erreur_h_temporal_2_mask_L2=$(safe_ratio "$erreur_h2b_L2_mask" "$erreur_h2c_L2_mask")
-ratio_erreur_q_temporal_2_mask_L2=$(safe_ratio "$erreur_q2b_L2_mask" "$erreur_q2c_L2_mask")
-ratio_erreur_h_temporal_2_mask_L1=$(safe_ratio "$erreur_h2b_L1_mask" "$erreur_h2c_L1_mask")
-ratio_erreur_q_temporal_2_mask_L1=$(safe_ratio "$erreur_q2b_L1_mask" "$erreur_q2c_L1_mask")
-
-ordre_h_temporal_2=$(safe_order "$ratio_erreur_h_temporal_2" "$ratio_cfl_2")
-ordre_q_temporal_2=$(safe_order "$ratio_erreur_q_temporal_2" "$ratio_cfl_2")
-ordre_h_temporal_2_L1=$(safe_order "$ratio_erreur_h_temporal_2_L1" "$ratio_cfl_2")
-ordre_q_temporal_2_L1=$(safe_order "$ratio_erreur_q_temporal_2_L1" "$ratio_cfl_2")
-
-ordre_h_temporal_2_mask_L2=$(safe_order "$ratio_erreur_h_temporal_2_mask_L2" "$ratio_cfl_2")
-ordre_q_temporal_2_mask_L2=$(safe_order "$ratio_erreur_q_temporal_2_mask_L2" "$ratio_cfl_2")
-ordre_h_temporal_2_mask_L1=$(safe_order "$ratio_erreur_h_temporal_2_mask_L1" "$ratio_cfl_2")
-ordre_q_temporal_2_mask_L1=$(safe_order "$ratio_erreur_q_temporal_2_mask_L1" "$ratio_cfl_2")
-
-echo "Rapport CFL (0.9→0.45): $ratio_cfl (doit être ≈ 2)"
-echo "Rapport erreur hauteur (L2): $ratio_erreur_h_temporal"
-echo "Rapport erreur débit   (L2): $ratio_erreur_q_temporal"
-echo "Rapport erreur hauteur (L1): $ratio_erreur_h_temporal_L1"
-echo "Rapport erreur débit   (L1): $ratio_erreur_q_temporal_L1"
-echo ""
+echo "=== TEMPS (regression log-log, CFL <= 0.45) ==="
 printf "┌─────────────────────────────────────────────┐\n"
-printf "│ %-20s │ %-18s │\n" "  Ordre temporel MUSCL" "0.9→0.45 (≈1.0)"
+printf "│ %-26s │ %-10s │\n" "Ordre temporel MUSCL" "Valeur"
 printf "├─────────────────────────────────────────────┤\n"
-printf "│ %-20s │ %18s │\n" "  Hauteur (L2)" "$ordre_h_temporal"
-printf "│ %-20s │ %18s │\n" "  Débit   (L2)" "$ordre_q_temporal"
-printf "│ %-20s │ %18s │\n" "  Hauteur (L1)" "$ordre_h_temporal_L1"
-printf "│ %-20s │ %18s │\n" "  Débit   (L1)" "$ordre_q_temporal_L1"
-printf "└─────────────────────────────────────────────┘\n"
-
-printf "┌─────────────────────────────────────────────┐\n"
-printf "│ %-20s │ %-18s │\n" "  Ordre temporel MUSCL" "Masqué 0.9→0.45"
-printf "├─────────────────────────────────────────────┤\n"
-printf "│ %-20s │ %18s │\n" "  Hauteur (L2)" "$ordre_h_temporal_mask_L2"
-printf "│ %-20s │ %18s │\n" "  Débit   (L2)" "$ordre_q_temporal_mask_L2"
-printf "│ %-20s │ %18s │\n" "  Hauteur (L1)" "$ordre_h_temporal_mask_L1"
-printf "│ %-20s │ %18s │\n" "  Débit   (L1)" "$ordre_q_temporal_mask_L1"
+printf "│ %-26s │ %10s │\n" "Hauteur (L2)" "$ordre_temporal_reg_hL2"
+printf "│ %-26s │ %10s │\n" "Debit   (L2)" "$ordre_temporal_reg_qL2"
+printf "│ %-26s │ %10s │\n" "Hauteur (L1)" "$ordre_temporal_reg_hL1"
+printf "│ %-26s │ %10s │\n" "Debit   (L1)" "$ordre_temporal_reg_qL1"
 printf "└─────────────────────────────────────────────┘\n"
 
 echo ""
-echo "Rapport CFL (0.45→0.225): $ratio_cfl_2 (doit être ≈ 2)"
-echo "Rapport erreur hauteur (L2): $ratio_erreur_h_temporal_2"
-echo "Rapport erreur débit   (L2): $ratio_erreur_q_temporal_2"
-echo "Rapport erreur hauteur (L1): $ratio_erreur_h_temporal_2_L1"
-echo "Rapport erreur débit   (L1): $ratio_erreur_q_temporal_2_L1"
+echo "Campagne spatiale N : $SPATIAL_N_LIST"
+echo "Campagne temporelle CFL : $TEMPORAL_CFL_LIST"
+echo "(Respect de la contrainte de stabilite: CFL maximale = 0.45)"
 echo ""
-printf "┌─────────────────────────────────────────────┐\n"
-printf "│ %-20s │ %-18s │\n" "  Ordre temporel MUSCL" "0.45→0.225 (≈1.0)"
-printf "├─────────────────────────────────────────────┤\n"
-printf "│ %-20s │ %18s │\n" "  Hauteur (L2)" "$ordre_h_temporal_2"
-printf "│ %-20s │ %18s │\n" "  Débit   (L2)" "$ordre_q_temporal_2"
-printf "│ %-20s │ %18s │\n" "  Hauteur (L1)" "$ordre_h_temporal_2_L1"
-printf "│ %-20s │ %18s │\n" "  Débit   (L1)" "$ordre_q_temporal_2_L1"
-printf "└─────────────────────────────────────────────┘\n"
-
-printf "┌─────────────────────────────────────────────┐\n"
-printf "│ %-20s │ %-18s │\n" "  Ordre temporel MUSCL" "Masqué 0.45→0.225"
-printf "├─────────────────────────────────────────────┤\n"
-printf "│ %-20s │ %18s │\n" "  Hauteur (L2)" "$ordre_h_temporal_2_mask_L2"
-printf "│ %-20s │ %18s │\n" "  Débit   (L2)" "$ordre_q_temporal_2_mask_L2"
-printf "│ %-20s │ %18s │\n" "  Hauteur (L1)" "$ordre_h_temporal_2_mask_L1"
-printf "│ %-20s │ %18s │\n" "  Débit   (L1)" "$ordre_q_temporal_2_mask_L1"
-printf "└─────────────────────────────────────────────┘\n"
-
-echo ""
-echo "✓ Résultats MUSCL sauvegardés dans convergence_results_muscl.csv"
+echo "Resultats detailles sauvegardes dans convergence_results_muscl.csv"

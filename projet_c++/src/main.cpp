@@ -8,8 +8,7 @@
 #include <vector>
 #include <ctime>
 
-// neuuuuuuill
-// teeeest git
+
 using namespace std;
 using namespace Eigen;
 
