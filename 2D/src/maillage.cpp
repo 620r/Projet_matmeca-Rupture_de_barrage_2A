@@ -17,22 +17,23 @@ void Maillage::lire_mesh_medit(const string &fichier) {
 
     string line;
     int nb_noeuds, nb_aretes_bord, nb_mailles;
-    int n1, n2, n3, cl, mat;
+    int n1, n2, n3, cl;
+    double coord3D;
 
-    // --- ignorer 2 lignes d'en-tête
-    for(int i=0;i<2;i++) getline(in,line);
+    // --- ignorer 3 lignes d'en-tête
+    for(int i=0;i<3;i++) getline(in,line);
     
     // Vertices
     getline(in,line); in >> nb_noeuds;
     if (line != "Vertices") {
-        cout << "Ligne différente de Vertices : `" << line << "`\n";
+        cout << "Erreur ligne différente de Vertices : `" << line << "`\n";
         exit(1);
     }
 
     // --- lecture des coordonnées des noeuds
     coord_noeud.resize(nb_noeuds, vector<double>(2));
     for(int i=0;i<nb_noeuds;i++) {
-        if (!(in >> coord_noeud[i][0] >> coord_noeud[i][1])) {
+        if (!(in >> coord_noeud[i][0] >> coord_noeud[i][1] >> coord3D >> cl)) {
             cerr << "Erreur lecture des coordonnées du noeud " << i << "\n";
             return; // ou break si tu veux continuer
         }
@@ -41,7 +42,7 @@ void Maillage::lire_mesh_medit(const string &fichier) {
     // Edges
     getline(in,line); getline(in,line); in >> nb_aretes_bord;
     if (line != "Edges") {
-        cout << "Ligne différente de Edges : `" << line << "`\n";
+        cout << "Erreur ligne différente de Edges : `" << line << "`\n";
         exit(1);
     }
 
@@ -61,14 +62,14 @@ void Maillage::lire_mesh_medit(const string &fichier) {
     // Triangles
     getline(in,line); getline(in,line); in >> nb_mailles;
     if (line != "Triangles") {
-        cout << "Ligne différente de Triangles : `" << line << "`\n";
+        cout << "Erreur ligne différente de Triangles : `" << line << "`\n";
         exit(1);
     }
 
     // --- lecture du numéro de chaque noeud de la maille et de la CL associée
     noeud_maille.resize(nb_mailles, vector<int>(3));
     for(int i=0;i<nb_mailles;i++){
-        if (!(in >> n1 >> n2 >> n3 >> mat)) {
+        if (!(in >> n1 >> n2 >> n3 >> cl)) {
             cerr << "Erreur lecture triangle " << i << "\n";
             return;
         }

@@ -16,21 +16,24 @@ int main(int argc, char * argv[]) //le fichier données initiales
 
 // ### DECLARATIONS et INITIALISATIONS ###
 
+
   //1 Outils boucles
   cout << "//1 Outils boucles" << endl;
 
     double sum;
     double am;
-    int j, k;
+
 
   //2 Données initiales
   cout << "//2 Données initiales" << endl;
 
+    double g = 9.81;
     double hG, hD;            //hauteurs d'eau à t0
     double tmax, CFL;         //paramètres temporels
     double x_lim;             //parametre spatial 
     string fichier_maillage;  //fichier.mesh contenant le maillage
     //sûrement aussi des CL à lire
+
 
   //3 Lecture du fichier d'initialisation
   cout << "//3 Lecture fichier d'initialisation" << endl;
@@ -61,11 +64,11 @@ int main(int argc, char * argv[]) //le fichier données initiales
     fichier_initialisation.close();
 
     // Affichage des données récupérées
-    cout << " " << endl;
     cout << "hG :" << hG << ",  hD :" << hD << endl;
     cout << "tmax :" << tmax << ",  CFL :" << CFL << endl;
     cout << "x_lim :" << x_lim << ",  fichier_maillage :" << fichier_maillage << endl;
     cout << " " << endl;
+
 
   //4 Classe Maillage .m 
   cout << "//4 Maillage .m" << endl;
@@ -77,6 +80,7 @@ int main(int argc, char * argv[]) //le fichier données initiales
     m.calcul_aires();
     m.calcul_centres_et_aretes();
 
+
   //5 Matrices/vecteurs Un, Unp1, F, b, Flux_num
   cout << "//5 Matrices/vecteurs" << endl;
 
@@ -86,7 +90,9 @@ int main(int argc, char * argv[]) //le fichier données initiales
     VectorXd b(nb_mailles);
     VectorXd Flux_num(2);
 
-    // peut-être faire une classe avec Un[1], Un[2], F[1], F[2], et b qui sont que des données ratachées aux mailles
+    // peut-être faire une classe avec Un, Unp1, F et b
+    // qui sont que des données ratachées aux mailles
+
 
   //6 Paramètres temporels
   cout << "//6 Paramètres temporels" << endl;
@@ -106,28 +112,39 @@ int main(int argc, char * argv[]) //le fichier données initiales
 
       Un(k,1)=0;  // Débit initial
 
+      // peut-être faire  une fonction (potentiellement inclue dans une classe) 
+      // qui prenne hG et xlim en entrée et Un en sortie
+
     }
-
-
 
 // ### BOUCLE EN TEMPS ###
 
-  //while (t<tmax)
+  while (t<tmax)
   {
 
   //1 Boucle sur les mailles pour F, Unp1 et b
 
-
     for (int k=0 ; k<nb_mailles ; k++)
     {
+      //Calcul flux
+      F(k,0) = Un(k,1); //q
+      F(k,1) = pow(Un(k,1),2)/Un(k,0) + g*pow(Un(k,0),2)/2; //q2/h + gh2/2
 
-    Unp1(k)=Un(k) ;
+      //Calcul valeurs propres
+      b(k) = Un(k,1)/Un(k,0) + pow(g*Un(k,0),1/2); //q/h + sqrt(gh)
 
-    
+      // //Mise à jour Unp1
+      Unp1(k,0) = Un(k,0);
+      Unp1(k,1) = Un(k,1);
 
+      // peut-être faire  une fonction (potentiellement inclue dans une classe) 
+      // qui prenne Un en entrée et F, b, Unp1 en sortie
     }
 
+
   //2 Mise à jour paramètres temps
+
+  t = tmax ; //oui non on est d'accord
 
   //3 Boucle sur les arrêtes pour FF et Unp1
 
