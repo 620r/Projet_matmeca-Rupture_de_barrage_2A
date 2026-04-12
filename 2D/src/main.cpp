@@ -1,4 +1,4 @@
-#include "maillage.h"
+#include "solution.h"
 
 #include <string>
 #include <iostream>
@@ -10,170 +10,66 @@
 using namespace std;
 using namespace Eigen;
 
-
-int main(int argc, char * argv[]) //le fichier données initiales
+int main(int argc, char * argv[]) //argv[1] = le fichier données initiales
 {
 
 // ### DECLARATIONS et INITIALISATIONS ###
-
+cout << "### DECLARATIONS et INITIALISATIONS ###" << endl;
 
   //1 Outils boucles
-  cout << "//1 Outils boucles" << endl;
 
     double sum;
     double am;
+    VectorXd Flux_num(2);
 
+  //2 Données initiales .p
 
-  //2 Données initiales
-  cout << "//2 Données initiales" << endl;
+    Parametres p;
+    p.lecture_fichier(argv[1]); //hG, hD, tmax, CFL, x_lim, fichier_maillage
+    p.print_donnees_initiales();
 
-    double g = 9.81;
-    double hG, hD;            //hauteurs d'eau à t0
-    double tmax, CFL;         //paramètres temporels
-    double x_lim;             //parametre spatial 
-    string fichier_maillage;  //fichier.mesh contenant le maillage
-    //sûrement aussi des CL à lire
-
-
-  //3 Lecture du fichier d'initialisation
-  cout << "//3 Lecture fichier d'initialisation" << endl;
-
-    ifstream fichier_initialisation(argv[1]);
-    string line;
-    if (fichier_initialisation.fail())
-    {
-      cout << "Pas de fichier d'initialisation" << endl;
-      return 1;
-    }
-    while (getline(fichier_initialisation,line))
-    {
-      istringstream iss(line);
-      string key, eq;
-      if(iss>>key>>eq)
-      {
-        if (key == "hG") {iss >> hG ;}
-        else if (key == "hD") {iss >> hD ;}
-        else if (key == "tmax") { iss >> tmax ;}
-        else if (key == "CFL") { iss >> CFL ;}
-        else if (key == "x_lim") { iss >> x_lim ;}
-        else if (key == "fichier_maillage") { iss >> fichier_maillage ;}
-        //sûrement aussi des CL à lire 
-      }
-    }
-
-    fichier_initialisation.close();
-
-    // Affichage des données récupérées
-    cout << "hG :" << hG << ",  hD :" << hD << endl;
-    cout << "tmax :" << tmax << ",  CFL :" << CFL << endl;
-    cout << "x_lim :" << x_lim << ",  fichier_maillage :" << fichier_maillage << endl;
-    cout << " " << endl;
-
-
-  //4 Classe Maillage .m 
-  cout << "//4 Maillage .m" << endl;
+  //3 Classe Maillage .m
 
     Maillage m;
-    
-    m.lire_mesh_medit(fichier_maillage);
+    m.lire_mesh_medit(p.fichier_maillage);
     m.calcul_connectivite();
     m.calcul_aires();
     m.calcul_centres_et_aretes();
 
 
-  //5 Matrices/vecteurs Un, Unp1, F, b, Flux_num
-  cout << "//5 Matrices/vecteurs" << endl;
+  //4 Classe Solution .s
 
     int nb_mailles = m.aire_maille.size();
 
-    MatrixXd Un(nb_mailles, 2), Unp1(nb_mailles, 2), F(nb_mailles, 2);
-    VectorXd b(nb_mailles);
-    VectorXd Flux_num(2);
+    Solution s(nb_mailles);
+    s.initialisation_Un(m, p); //Un, Unp1, F, b
 
-    // peut-être faire une classe avec Un, Unp1, F et b
-    // qui sont que des données ratachées aux mailles
-
-
-  //6 Paramètres temporels
-  cout << "//6 Paramètres temporels" << endl;
+  //5 Paramètres temporels
 
     double t = 0 ;
     double delta_t;
 
-  //7 Initialisation Un
-  cout << "//7 Initialisation Un" << endl;
-
-    for (int k=0 ; k<nb_mailles ; k++)
-    {
-
-      if (m.centre_maille[k][0]<x_lim){ Un(k,0)=hG; } // Hauteur initiale 
-
-      else { Un(k,0)=hD; }
-
-      Un(k,1)=0;  // Débit initial
-
-      // peut-être faire  une fonction (potentiellement inclue dans une classe) 
-      // qui prenne hG et xlim en entrée et Un en sortie
-
-    }
 
 // ### BOUCLE EN TEMPS ###
+cout << "### BOUCLE EN TEMPS ###" << endl;
 
-  while (t<tmax)
+  while (t < p.tmax)
   {
 
   //1 Boucle sur les mailles pour F, Unp1 et b
 
-    for (int k=0 ; k<nb_mailles ; k++)
-    {
-      //Calcul flux
-      F(k,0) = Un(k,1); //q
-      F(k,1) = pow(Un(k,1),2)/Un(k,0) + g*pow(Un(k,0),2)/2; //q2/h + gh2/2
-
-      //Calcul valeurs propres
-      b(k) = Un(k,1)/Un(k,0) + pow(g*Un(k,0),1/2); //q/h + sqrt(gh)
-
-      // //Mise à jour Unp1
-      Unp1(k,0) = Un(k,0);
-      Unp1(k,1) = Un(k,1);
-
-      // peut-être faire  une fonction (potentiellement inclue dans une classe) 
-      // qui prenne Un en entrée et F, b, Unp1 en sortie
-    }
-
+    s.maj_maille(m);
 
   //2 Mise à jour paramètres temps
 
-  t = tmax ; //oui non on est d'accord
+    t = p.tmax ; //oui non on est d'accord
 
   //3 Boucle sur les arrêtes pour FF et Unp1
 
-  
+
 
 
   }
-
-
-
-
-//   // Temps, itération.. :::::::
-//   double t, t_final ;
-//   double delta_t;
-//   int nb_mailles ;
-//   //:::::::::::::::::::::::::::
-
-//   //Boucle
-
-
-
-
-
-
-
-//   // Initialisations :
-
-//   Un(0)=hG_0;  // Hauteur initiale mais de quoi ???
-//   Un(1)=q0;  // Débit initial mais de quoi ???
 
 
 

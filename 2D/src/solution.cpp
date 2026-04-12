@@ -1,0 +1,46 @@
+#include "solution.h"
+
+
+// --- Constructeur
+Solution::Solution(int nb_mailles)
+    : nb_mailles(nb_mailles),
+      Un(nb_mailles, 2),
+      Unp1(nb_mailles, 2),
+      F(nb_mailles, 2),
+      b(nb_mailles)
+{
+}
+
+// --- Initialisation
+void Solution::initialisation_Un(const Maillage& m, const Parametres& p)
+{
+    for (int k=0 ; k<nb_mailles ; k++)
+    {
+        // Hauteur initiale 
+        if (m.centre_maille[k][0] < p.x_lim)
+        { Un(k,0) = p.hG; } 
+        else 
+        { Un(k,0) = p.hD; }
+
+        // Débit initial
+        Un(k,1) = 0;  
+    }
+}
+
+// --- Mise à jour maille
+void Solution::maj_maille(const Maillage& m)
+{
+    for (int k=0 ; k<nb_mailles ; k++)
+    {
+      //Calcul flux
+      F(k,0) = Un(k,1); //q
+      F(k,1) = pow(Un(k,1),2)/Un(k,0) + g*pow(Un(k,0),2)/2; //q2/h + gh2/2
+
+      //Calcul valeurs propres
+      b(k) = Un(k,1)/Un(k,0) + pow(g*Un(k,0),1/2); //q/h + sqrt(gh)
+
+      //Mise à jour Unp1
+      Unp1(k,0) = Un(k,0);
+      Unp1(k,1) = Un(k,1);
+    }
+}

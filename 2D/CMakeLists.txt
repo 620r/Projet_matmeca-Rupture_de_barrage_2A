@@ -36,7 +36,7 @@ set( CMAKE_BUILD_TYPE "Debug" )
 set( TARGET_NAME "barrage_2D_${CMAKE_BUILD_TYPE}" )
 
 # Liste *exhaustive* des fichiers à compiler ensemble.
-set( PROJECT_COMPILATION_FILE_LIST src/main.cpp src/maillage.cpp)
+set( PROJECT_COMPILATION_FILE_LIST src/main.cpp src/maillage.cpp src/solution.cpp src/parametres.cpp)
 
 # Précise que l'exécutable sera à assembler avec ces fichiers compilés.
 add_executable( ${TARGET_NAME} ${PROJECT_COMPILATION_FILE_LIST} )
