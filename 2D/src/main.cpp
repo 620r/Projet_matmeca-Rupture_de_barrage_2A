@@ -18,8 +18,7 @@ cout << "### DECLARATIONS et INITIALISATIONS ###" << endl;
 
   //1 Outils boucles
 
-    double sum;
-    double am;
+    int k, l;
     VectorXd Flux_num(2);
 
   //2 Données initiales .p
@@ -35,11 +34,14 @@ cout << "### DECLARATIONS et INITIALISATIONS ###" << endl;
     m.calcul_connectivite();
     m.calcul_aires();
     m.calcul_centres_et_aretes();
-
-
-  //4 Classe Solution .s
+    m.calcul_d_carac();
 
     int nb_mailles = m.aire_maille.size();
+    int nb_aretes = m.noeud_arete.size();
+    cout << "nb_mailles = " << nb_mailles << " et nb_aretes = " << nb_aretes << endl; 
+    cout << "" << nb_aretes << endl; 
+
+  //4 Classe Solution .s
 
     Solution s(nb_mailles);
     s.initialisation_Un(m, p); //Un, Unp1, F, b
@@ -47,7 +49,7 @@ cout << "### DECLARATIONS et INITIALISATIONS ###" << endl;
   //5 Paramètres temporels
 
     double t = 0 ;
-    double delta_t;
+    double dt;
 
 
 // ### BOUCLE EN TEMPS ###
@@ -62,11 +64,24 @@ cout << "### BOUCLE EN TEMPS ###" << endl;
 
   //2 Mise à jour paramètres temps
 
-    t = p.tmax ; //oui non on est d'accord
+    dt = p.CFL *m.d_carac /s.b.maxCoeff(); // CFL *distance carcatériqtique minimale /max des valeurs propres
+    t = t + dt;
 
   //3 Boucle sur les arrêtes pour FF et Unp1
 
+    for(int e=0;e<nb_aretes;e++){
 
+      //numéros des mailles voisines
+      k = m.maille_arete[e][0];
+      l = m.maille_arete[e][1]; //sauf que on peut tomber sur des arrêtes de bord, je crois que dans ce cas cette quantité vaut 0
+
+      //calcul du flux en fonctions des données des deux mailles voisines, et d'une histoire de norme que je maitrise pas
+      //ajout du flux dans les deux mailles voisines
+    }
+
+
+ 
+  t = p.tmax; //juste le temps d'écrire le code
 
 
   }

@@ -22,12 +22,14 @@ public:
     std::vector<std::vector<double>> centre_maille; // coordonnées des centre des mailles [nb_mailles][2] pour x et y
     std::vector<std::vector<int>> noeud_arete_bord; // noeuds des arêtes de bord [nb_aretes_bord ?][2]
     std::vector<int> cl_arete_bord;                 // code CL arêtes de bord [nb_aretes_bord ?]
+    double d_carac;                                 // distance caractéristique du maillage
 
     // --- Fonctions publiques accessibles
     void lire_mesh_medit(const std::string &fichier);
     void calcul_connectivite();
     void calcul_aires();
     void calcul_centres_et_aretes();
+    void calcul_d_carac();
     void sortie_vtk(int iter, const std::vector<std::pair<std::string,std::vector<double>>> &scalars) const;
     	// Chaque paire = (nom_champ, valeurs_par_maille)
 };

@@ -209,6 +209,19 @@ void Maillage::calcul_centres_et_aretes() {
 }
 
 // ----------------------------------------
+// Calcul distance caractéristique minimale
+// ----------------------------------------
+void Maillage::calcul_d_carac() {
+    int nb_mailles = noeud_maille.size();
+    double dk;
+    
+    for(int k=0;k<nb_mailles;k++){
+        dk = 2 * aire_maille[k] / (l_arete[arete_maille[k][0]] + l_arete[arete_maille[k][1]] + l_arete[arete_maille[k][2]]);
+        d_carac = min(d_carac,dk);
+    }
+}
+
+// ----------------------------------------
 // Sortie VTK multi-champs
 // ----------------------------------------
 void Maillage::sortie_vtk(int iter, 
