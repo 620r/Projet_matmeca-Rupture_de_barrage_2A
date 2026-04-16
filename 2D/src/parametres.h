@@ -10,7 +10,7 @@ public:
 
     // --- Données publiques accessibles
     double hG, hD;            //hauteurs d'eau à t0
-    double tmax, CFL;         //paramètres temporels
+    double tmax, t_pas, CFL;         //paramètres temporels
     double x_lim;             //parametre spatial 
     std::string fichier_maillage;  //fichier.mesh contenant le maillage
     

@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <Eigen/Dense>
 
 
 class Maillage {
@@ -30,6 +31,5 @@ public:
     void calcul_aires();
     void calcul_centres_et_aretes();
     void calcul_d_carac();
-    void sortie_vtk(int iter, const std::vector<std::pair<std::string,std::vector<double>>> &scalars) const;
-    	// Chaque paire = (nom_champ, valeurs_par_maille)
+    void sortie_vtk(int iter, const Eigen::MatrixXd Un) const;
 };

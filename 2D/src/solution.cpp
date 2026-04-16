@@ -7,7 +7,8 @@ Solution::Solution(int nb_mailles)
       Un(nb_mailles, 2),
       Unp1(nb_mailles, 2),
       F(nb_mailles, 2),
-      b(nb_mailles)
+      b(nb_mailles),
+      Flux_num(2)
 {
 }
 
@@ -43,4 +44,13 @@ void Solution::maj_maille(const Maillage& m)
       Unp1(k,0) = Un(k,0);
       Unp1(k,1) = Un(k,1);
     }
+}
+
+// --- Calcul flux numérique
+void Solution::calcul_flux(const int k, const int l)
+{
+    double be = std::max(b(k),b(l));
+    Flux_num(0) = 0.5 *(F(k,0)+F(l,0)) + be /2 *(Un(k,0)-Un(l,0)); //0,5(F(Uk)+F(UL)).ne-(be/2)(UL-UK)
+    Flux_num(1) = 0.5 *(F(k,1)+F(l,1)) + be /2 *(Un(k,1)-Un(l,1));
+    // Je ne calcul pas encore le vecteur ne
 }

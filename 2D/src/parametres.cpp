@@ -27,6 +27,7 @@ void Parametres::lecture_fichier(const std::string& filename)
         if (key == "hG") {iss >> hG ;}
         else if (key == "hD") {iss >> hD ;}
         else if (key == "tmax") { iss >> tmax ;}
+        else if (key == "t_pas") { iss >> t_pas ;}
         else if (key == "CFL") { iss >> CFL ;}
         else if (key == "x_lim") { iss >> x_lim ;}
         else if (key == "fichier_maillage") { iss >> fichier_maillage ;}

@@ -224,10 +224,9 @@ void Maillage::calcul_d_carac() {
 // ----------------------------------------
 // Sortie VTK multi-champs
 // ----------------------------------------
-void Maillage::sortie_vtk(int iter, 
-    const vector<pair<string,vector<double>>> &scalars) const
+void Maillage::sortie_vtk(int iter, const Eigen::MatrixXd Un) const
 {
-    string filename = "sortie_" + to_string(iter) + ".vtk";
+    string filename = "./sorties/sortie_" + to_string(iter) + ".vtk";
     ofstream out(filename);
     if(!out){ cerr << "Impossible d'ouvrir " << filename << "\n"; return; }
 
@@ -255,16 +254,24 @@ void Maillage::sortie_vtk(int iter,
 
     // Cell data (multi-scalars)
     out << "CELL_DATA " << nb_mailles_local << "\n";
-    for(auto &s : scalars){
-        const auto &nom = s.first;
-        const auto &valeurs = s.second;
-        if(valeurs.size()!= static_cast<size_t>(nb_mailles_local)){
-            cerr << "Attention : vecteur " << nom << " n'a pas la bonne taille\n";
-            continue;
-        }
-        out << "SCALARS " << nom << " double\n";
+    
+    if(Un.rows() != nb_mailles_local){cerr << "Erreur : matrice Eigen mauvaise taille\n";} 
+    else 
+    {
+        out << "SCALARS hauteur" << " double\n";
         out << "LOOKUP_TABLE default\n";
-        for(double v : valeurs) out << v << "\n";
+
+        for(int k = 0; k < nb_mailles_local; k++){
+            out << Un(k, 0) << "\n";
+        }
+
+        out << "SCALARS débit" << " double\n";
+        out << "LOOKUP_TABLE default\n";
+
+        for(int k = 0; k < nb_mailles_local; k++){
+            out << Un(k, 1) << "\n";
+        }
     }
-    out.close();
+
 }
+
