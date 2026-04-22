@@ -1,7 +1,7 @@
 hG = 10
 hD = 1
-tmax = 0.1
-t_pas = 0.01
+tmax = 10
+t_pas = 0.1
 CFL = 1
-x_lim = 0
+x_lim = 3
 fichier_maillage = barrage.mesh

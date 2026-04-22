@@ -23,6 +23,7 @@ public:
     
     // --- Fonctions publiques accessibles
     void initialisation_Un(const Maillage& m, const Parametres& p);
-    void maj_maille(const Maillage& m);
+    void calcul_maille(const Maillage& m);
     void calcul_flux(const int k, const int l);
+    void maj_Un();
 };

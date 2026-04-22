@@ -214,6 +214,7 @@ void Maillage::calcul_centres_et_aretes() {
 void Maillage::calcul_d_carac() {
     int nb_mailles = noeud_maille.size();
     double dk;
+    d_carac = 100;
     
     for(int k=0;k<nb_mailles;k++){
         dk = 2 * aire_maille[k] / (l_arete[arete_maille[k][0]] + l_arete[arete_maille[k][1]] + l_arete[arete_maille[k][2]]);

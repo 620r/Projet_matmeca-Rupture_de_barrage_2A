@@ -38,7 +38,9 @@ cout << "### DECLARATIONS et INITIALISATIONS ###" << endl;
 
     int nb_mailles = m.aire_maille.size();
     int nb_aretes = m.noeud_arete.size();
-    cout << "nb_mailles = " << nb_mailles << " et nb_aretes = " << nb_aretes << endl; 
+    double d = m.d_carac ;
+
+    cout << "nb_mailles = " << nb_mailles << " et nb_aretes = " << nb_aretes << " d = " << d << endl; 
     cout << ""<< endl; 
 
   //4 Classe Solution .s
@@ -61,13 +63,14 @@ cout << "### BOUCLE EN TEMPS ###" << endl;
 
   //1 Boucle sur les mailles pour F, Unp1 et b
 
-    s.maj_maille(m);
+    s.calcul_maille(m);
 
   //2 Mise à jour paramètres temps
 
-    dt = p.CFL *m.d_carac /s.b.maxCoeff(); // CFL *distance carcatériqtique minimale /max des valeurs propres
+    dt = p.CFL *d /s.b.maxCoeff(); // CFL *distance carcatériqtique minimale /max des valeurs propres
     t = t + dt;
     iter += 1;
+    cout << " b =" << s.b.maxCoeff() << " dt=" << dt << endl;
 
   //3 Boucle sur les arrêtes pour FF et Unp1
 
@@ -97,23 +100,26 @@ cout << "### BOUCLE EN TEMPS ###" << endl;
         // --- ATTENTION ---
 
         //ajout du flux dans l'une des mailles voisines
-        s.Unp1(k,0) += - dt / m.aire_maille[k] * m.l_arete[e] * s.Flux_num(0);
-        s.Unp1(k,1) += - dt / m.aire_maille[k] * m.l_arete[e] * s.Flux_num(1);
+        s.Unp1(k,0) += + dt / m.aire_maille[k] * m.l_arete[e] * s.Flux_num(0);
+        s.Unp1(k,1) += + dt / m.aire_maille[k] * m.l_arete[e] * s.Flux_num(1);
 
         //soustraction du flux dans l'autre
         s.Unp1(l,0) += - dt / m.aire_maille[l] * m.l_arete[e] * s.Flux_num(0);
         s.Unp1(l,1) += - dt / m.aire_maille[l] * m.l_arete[e] * s.Flux_num(1);
       }
-     
     }
+
+  //4 Mise à jour Un
+
+    s.maj_Un();
 
   //4 Sortie VTK
 
     if(t>t_print)
     {
+      cout << t << " s, Sortie " << iter << endl; 
       m.sortie_vtk(iter, s.Un);
       t_print += p.t_pas;
-      cout << t << " s, Sortie " << iter << endl; 
     }
 
 
