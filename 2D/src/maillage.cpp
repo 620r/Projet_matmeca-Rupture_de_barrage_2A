@@ -25,7 +25,7 @@ void Maillage::lire_mesh_medit(const string &fichier) {
     
     // Vertices
     getline(in,line); in >> nb_noeuds;
-    if (line != "Vertices") {
+    if (line != " Vertices") {
         cout << "Erreur ligne différente de Vertices : `" << line << "`\n";
         exit(1);
     }
@@ -41,7 +41,7 @@ void Maillage::lire_mesh_medit(const string &fichier) {
 
     // Edges
     getline(in,line); getline(in,line); in >> nb_aretes_bord;
-    if (line != "Edges") {
+    if (line != " Edges") {
         cout << "Erreur ligne différente de Edges : `" << line << "`\n";
         exit(1);
     }
@@ -61,7 +61,7 @@ void Maillage::lire_mesh_medit(const string &fichier) {
 
     // Triangles
     getline(in,line); getline(in,line); in >> nb_mailles;
-    if (line != "Triangles") {
+    if (line != " Triangles") {
         cout << "Erreur ligne différente de Triangles : `" << line << "`\n";
         exit(1);
     }
@@ -188,6 +188,8 @@ void Maillage::calcul_centres_et_aretes() {
     d_arete.resize(nb_aretes);
     l_arete.resize(nb_aretes);
     milieu_arete.resize(nb_aretes, vector<double>(2));
+    normale_arete.resize(nb_aretes, vector<double>(2)); 
+    
     for(int i=0;i<nb_aretes;i++){
         int tg = maille_arete[i][0];
         int td = maille_arete[i][1];
@@ -205,6 +207,15 @@ void Maillage::calcul_centres_et_aretes() {
         milieu_arete[i][0] = 0.5*(A[0]+B[0]);
         milieu_arete[i][1] = 0.5*(A[1]+B[1]);
         l_arete[i] = sqrt((B[0]-A[0])*(B[0]-A[0]) + (B[1]-A[1])*(B[1]-A[1]));
+
+        // Normale unitaire sortante de tg
+        double nx =  (B[1]-A[1]) / l_arete[i];
+        double ny = -(B[0]-A[0]) / l_arete[i];
+        // Vérification orientation : doit pointer de Cg vers Cd
+        double dot = nx*(Cd[0]-Cg[0]) + ny*(Cd[1]-Cg[1]);
+        if(dot < 0){ nx = -nx; ny = -ny; }
+        normale_arete[i][0] = nx;
+        normale_arete[i][1] = ny;
     }
 }
 
@@ -266,11 +277,18 @@ void Maillage::sortie_vtk(int iter, const Eigen::MatrixXd Un) const
             out << Un(k, 0) << "\n";
         }
 
-        out << "SCALARS débit" << " double\n";
+        out << "SCALARS débitx" << " double\n";
         out << "LOOKUP_TABLE default\n";
 
         for(int k = 0; k < nb_mailles_local; k++){
             out << Un(k, 1) << "\n";
+        }
+
+        out << "SCALARS débity" << " double\n";
+        out << "LOOKUP_TABLE default\n";
+
+        for(int k = 0; k < nb_mailles_local; k++){
+            out << Un(k, 2) << "\n";
         }
     }
 

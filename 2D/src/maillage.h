@@ -23,6 +23,7 @@ public:
     std::vector<std::vector<double>> centre_maille; // coordonnées des centre des mailles [nb_mailles][2] pour x et y
     std::vector<std::vector<int>> noeud_arete_bord; // noeuds des arêtes de bord [nb_aretes_bord ?][2]
     std::vector<int> cl_arete_bord;                 // code CL arêtes de bord [nb_aretes_bord ?]
+    std::vector<std::vector<double>> normale_arete; // [nb_aretes][2] pour nx et ny
     double d_carac;                                 // distance caractéristique du maillage
 
     // --- Fonctions publiques accessibles

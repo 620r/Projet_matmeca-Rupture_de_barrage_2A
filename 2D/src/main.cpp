@@ -70,7 +70,6 @@ cout << "### BOUCLE EN TEMPS ###" << endl;
     dt = p.CFL *d /s.b.maxCoeff(); // CFL *distance carcatériqtique minimale /max des valeurs propres
     t = t + dt;
     iter += 1;
-    cout << " b =" << s.b.maxCoeff() << " dt=" << dt << endl;
 
   //3 Boucle sur les arrêtes pour FF et Unp1
 
@@ -79,33 +78,26 @@ cout << "### BOUCLE EN TEMPS ###" << endl;
       //numéros des mailles voisines
       k = m.maille_arete[e][0];
       l = m.maille_arete[e][1];
+
+      //normale à l'arrête
+      double nx = m.normale_arete[e][0];
+      double ny = m.normale_arete[e][1];
        
       if (l == -1) //maille de bord je crois
       {
-        // --- ATTENTION ---
-        // A changer pour un calcul de flux qui dépende de cl_arete_bord
-        // --- ATTENTION ---
-      }            
+        s.calcul_flux_bord(k, nx, ny, m.cl_arete[e], p.hG);
+        for(int i=0; i<3; i++)
+        s.Unp1(k,i) -= dt / m.aire_maille[k] * m.l_arete[e] * s.Flux_num(i);
+      }
       else //aute maille
       {
-        // --- ATTENTION ---
-        // Je ne calcul pas encore le vecteur ne dans la fonction calcul_flux
-        // --- ATTENTION ---
+        s.calcul_flux(k, l, nx, ny);
 
-        s.calcul_flux(k, l);
-
-        // --- ATTENTION ---
-        // Je ne suis pas sûre de pour quelles mailles je fais + ou - 
-        // peut-etre metre ces 4 lignes dans la classe solution ou dans une boucle
-        // --- ATTENTION ---
-
-        //ajout du flux dans l'une des mailles voisines
-        s.Unp1(k,0) += + dt / m.aire_maille[k] * m.l_arete[e] * s.Flux_num(0);
-        s.Unp1(k,1) += + dt / m.aire_maille[k] * m.l_arete[e] * s.Flux_num(1);
-
-        //soustraction du flux dans l'autre
-        s.Unp1(l,0) += - dt / m.aire_maille[l] * m.l_arete[e] * s.Flux_num(0);
-        s.Unp1(l,1) += - dt / m.aire_maille[l] * m.l_arete[e] * s.Flux_num(1);
+        for(int i=0; i<3; i++)
+        {
+            s.Unp1(k,i) -= dt / m.aire_maille[k] * m.l_arete[e] * s.Flux_num(i);
+            s.Unp1(l,i) += dt / m.aire_maille[l] * m.l_arete[e] * s.Flux_num(i);
+        }
       }
     }
 
